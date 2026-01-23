@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ExtSearch</title>
+  <title>About — ExtSearch</title>
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,47 +71,44 @@
     }
     
     h1 {
-      font-size: 48px;
+      font-size: 36px;
       font-weight: 600;
       letter-spacing: -0.03em;
       color: #1a1a1a;
-      margin-bottom: 2px;
+      margin-bottom: 24px;
     }
     
-    .subtitle {
-      font-size: 18px;
+    .content {
+      font-size: 16px;
+      line-height: 1.7;
       color: #52525b;
-      line-height: 1.6;
-      margin-bottom: 40px;
     }
     
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      background: #ececec;
-      color: #1a1a1a;
-      font-weight: 500;
-      font-size: 14px;
-      transition: all 0.15s;
+    .content p {
+      margin-bottom: 20px;
     }
     
-    .cta:hover {
-      background: #d8d8d8;
-      transform: translateY(-1px);
+    .content p:last-child {
+      margin-bottom: 0;
     }
     
-    .cta svg {
-      width: 16px;
-      height: 16px;
-    }
-    
-    .cta-container {
+    .footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e5e5;
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+    
+    .footer a {
+      font-size: 14px;
+      color: #71717a;
+      transition: color 0.15s;
+    }
+    
+    .footer a:hover {
+      color: #1a1a1a;
     }
   </style>
 </head>
@@ -128,31 +125,25 @@
   </header>
   
   <main class="page">
-    <h1>ExtSearch</h1>
-    <p style="font-size: 16px; color: #71717a; margin-bottom: 16px; font-weight: 500; margin-top: 0;">Extremal Search</p>
-    <p class="subtitle">
-      Finding optimal solutions to hard problems.<br>
-      Explore solutions through play.
-    </p>
-    <div class="cta-container">
-      <a href="fit.html" class="cta">
-        <img src="Img/fit-icon.svg" alt="Fit" style="width: 20px; height: 20px; display: block;" />
-        Play Fit
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-      </a>
-      <a href="fit-api.html" class="cta">
-        <img src="Img/API.svg" alt="API" style="width: 20px; height: 20px; display: block;" />
-        Download Fit API
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-      </a>
+    <h1>About ExtSearch</h1>
+    <div class="content">
+      <p>
+        ExtSearch is an open-source collaborative platform dedicated to exploring challenging combinatorial optimization problems and mapping the structure of their solution spaces.
+      </p>
+      
+      <p>
+        Through interactive tools and games, users can experiment with problem instances, construct candidate solutions, and contribute data that helps reveal recurring patterns, symmetries, and structural features underlying optimal configurations. The goal is not only to identify high-quality solutions, but to better understand the <em>landscape</em> in which those solutions exist.
+      </p>
+      
+      <p>
+        By aggregating human-generated solutions alongside algorithmic search results, ExtSearch aims to uncover effective heuristics, emergent strategies, and geometric or combinatorial regularities that may point toward deeper theoretical understanding.
+      </p>
+      
+      <p>
+        Over time, this collective dataset can help bring attention to notoriously difficult problems, guide future algorithm design, and support progress toward formal proofs for extremal and optimization problems that remain resistant to purely computational approaches.
+      </p>      
     </div>
-    <p style="margin-top: 24px;">
-      <a href="what-is-fit.html" style="color: #71717a; font-size: 14px; text-decoration: underline;">what is Fit?</a>
-    </p>
   </main>
-</body>
+  </body>
 </html>
+
