@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fit — Extremal Search</title>
-  <link rel="icon" type="image/png" href="Img/icon.png">
+  <title>Fit</title>
+  <link rel="icon" type="image/png" href="Img/Icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -13,12 +13,11 @@
 <body>
   <header class="header">
     <a href="index.html" class="logo">
-      <img src="Img/Icon.svg" alt="ExtSearch" />
-      Search
+      <img src="Img/IconFull.svg" alt="ExtSearch" />
     </a>
-    <nav>
-      <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <nav>  
       <a href="about.html">About</a>
+      <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
     </nav>
   </header>
   
@@ -26,17 +25,14 @@
     <!-- Left Panel -->
     <aside class="panel-left">
       <div class="panel-section">
-        <span class="panel-label">Create</span>
         <div class="source-square" id="source">
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
         </div>
-        <span class="source-hint">Drag to board to create</span>
       </div>
       
       <div class="panel-section">
-        <span class="panel-label">Stats</span>
         <div class="stats">
           <div class="stat-row">
             <span class="stat-label">Squares</span>
@@ -53,7 +49,14 @@
     <!-- Main Board -->
     <main class="board-area">
       <div class="board-wrapper">
-        <div class="board" id="board"></div>
+        <div class="board-zoom-container" id="board-zoom-container">
+          <div class="board-transform" id="board-transform">
+            <div class="board" id="board">
+              <div class="bounding-box" id="bounding-box"></div>
+              <div class="square-data" id="square-data"></div>
+            </div>
+          </div>
+        </div>
         
         <div class="delete-zone" id="delete-zone">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -64,19 +67,6 @@
       </div>
     </main>
     
-    <!-- Right Panel -->
-    <aside class="panel-right">
-      <div class="info-card">
-        <h3 class="info-title">Controls</h3>
-        <ul class="info-list">
-          <li>Drag from <span class="kbd">+</span> to create</li>
-          <li>Drag squares to move</li>
-          <li>Click to enter rotate mode</li>
-          <li>Click again to rotate 90°</li>
-          <li>Drag to trash to delete</li>
-        </ul>
-      </div>
-    </aside>
   </div>
   
   <!-- Ghost element for dragging -->
