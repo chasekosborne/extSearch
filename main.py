@@ -17,6 +17,11 @@ def about():
 @app.route('/fit')
 def fit():
     return render_template('fit.html')
+
+
+@app.route('/solution')
+def solution():
+    return render_template('solution.html')
     
 if __name__ == '__main__':
     app.run(debug=True)
