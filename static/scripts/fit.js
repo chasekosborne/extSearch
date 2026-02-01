@@ -118,7 +118,7 @@ function updateStats() {
   const maxSide = Math.max(w, h);
   
   // Display with high precision (up to 3 decimal places)
-  const maxSideStr = maxSide.toFixed(3).replace(/\.?0+$/, '');
+  const maxSideStr = maxSide.toFixed(13).replace(/\.?0+$/, '');
   statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
   
   // Update visual bounding box as a square
@@ -218,7 +218,7 @@ function updateAllSquareClasses() {
 }
 
 function formatSquareUnit(v) {
-  return Number(v).toFixed(3).replace(/\.?0+$/, '') || '0';
+  return Number(v).toFixed(13).replace(/\.?0+$/, '') || '0';
 }
 function formatRotation(v) {
   return Number(v).toFixed(1).replace(/\.?0+$/, '') || '0';
