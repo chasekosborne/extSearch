@@ -1,0 +1,61 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>extSearch</title>
+        <link rel="icon" type="image/png" href="Img/Icon.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style/base.css') }}">
+
+        <title> {% block title %}extSearch{% endblock %} </title>
+    </head>
+
+    <body>
+        <header class="header">
+            <a href="base.html" class="logo">
+                <img src="" alt="ExtSearch" />
+            </a>
+            
+            <nav>
+                <a href="about.html">About</a>
+                <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </nav>
+        </header>
+
+        <main class="page">
+            <h1>extSearch</h1>
+            <p style="font-size: 16px; color: #71717a; margin-bottom: 16px; font-weight: 500; margin-top: 0;">Extremal Search</p>
+            <p class="subtitle">
+            Finding optimal solutions to hard problems.<br>
+            Explore solutions through play.
+            </p>
+            <div class="cta-container">
+            <a href="fit.html" class="cta">
+                <img src="Img/fit-icon.svg" alt="Fit" style="width: 20px; height: 20px; display: block;" />
+                Play Fit
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </a>
+            <a href="fit-api.html" class="cta">
+                <img src="Img/API.svg" alt="API" style="width: 20px; height: 20px; display: block;" />
+                Download Fit API
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </a>
+            </div>
+            <p style="margin-top: 24px;">
+            <a href="what-is-fit.html" style="color: #71717a; font-size: 14px; text-decoration: underline;">what is Fit?</a>
+            </p>
+        </main>
+  
+        <div>
+            {% block content %} 
+
+            {% endblock %}
+        </div>
+    </body>
+</html>
