@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}
+Fit
+{% endblock %}
+
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/fit.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<div class="game-container">
+<!-- Left Panel -->
+<aside class="panel-left">
+    <div class="panel-section">
+    <div class="source-square" id="source">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+    </div>
+    </div>
+    
+    <div class="panel-section">
+    <div class="stats">
+        <div class="stat-row">
+        <span class="stat-label">Squares</span>
+        <span class="stat-value" id="stat-count">0</span>
+        </div>
+        <div class="stat-row">
+        <span class="stat-label">Bounds</span>
+        <span class="stat-value" id="stat-bounds">—</span>
+        </div>
+    </div>
+    </div>
+</aside>
+
+<!-- Main Board -->
+<main class="board-area">
+    <div class="board-wrapper">
+    <div class="board-zoom-container" id="board-zoom-container">
+        <div class="board-transform" id="board-transform">
+        <div class="board" id="board">
+            <div class="bounding-box" id="bounding-box"></div>
+            <div class="square-data" id="square-data"></div>
+        </div>
+        </div>
+    </div>
+    
+    <div class="delete-zone" id="delete-zone">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Drop to delete
+    </div>
+    </div>
+</main>
+
+</div>
+
+<!-- Ghost element for dragging -->
+<div class="ghost-square" id="ghost"></div>
+{% endblock %}
+
+{% block script%}
+<script src="{{ url_for('static', filename='scripts/fit.js') }}"></script>
+{%endblock%}
+

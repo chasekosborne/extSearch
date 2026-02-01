@@ -1,143 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About — extSearch</title>
-  <link rel="icon" type="image/png" href="Img/Icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: #ffffff;
-      color: #1a1a1a;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    a { 
-      color: inherit; 
-      text-decoration: none;
-    }
-    
-    .header {
-      padding: 16px 24px;
-      border-bottom: 1px solid #e5e5e5;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-    
-    .header .logo {
-      font-weight: 600;
-      font-size: 15px;
-      color: #1a1a1a;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .header .logo img {
-      height: 24px;
-      display: block;
-    }
-    
-    .header nav {
-      display: flex;
-      gap: 24px;
-    }
-    
-    .header nav a {
-      font-size: 14px;
-      color: #71717a;
-      transition: color 0.15s;
-    }
-    
-    .header nav a:hover {
-      color: #1a1a1a;
-    }
-    
-    .page {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 80px 24px;
-      flex: 1;
-    }
-    
-    h1 {
-      font-size: 36px;
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      color: #1a1a1a;
-      margin-bottom: 24px;
-    }
-    
-    .content {
-      font-size: 16px;
-      line-height: 1.7;
-      color: #52525b;
-    }
-    
-    .content p {
-      margin-bottom: 20px;
-    }
-    
-    .content p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .footer {
-      padding: 16px 24px;
-      border-top: 1px solid #e5e5e5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-    }
-    
-    .footer a {
-      font-size: 14px;
-      color: #71717a;
-      transition: color 0.15s;
-    }
-    
-    .footer a:hover {
-      color: #1a1a1a;
-    }
-  </style>
-</head>
-<body>
-  <header class="header">
-    <a href="index.html" class="logo">
-      <img src="static/Img/IconFull.svg" alt="extSearch" />
-    </a>
-    <nav>
-      <a href="about.html">About</a>
-      <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
-    </nav>
-  </header>
-  
-  <main class="page">
-    <h1>About extSearch</h1>
-    <div class="content">
-      <p>
-        extSearch is an open-source platform dedicated to exploring challenging combinatorial optimization problems and mapping the structure of their solution spaces.
-      </p>
-      
-      <p>
-        Through interactive tools and games, users can experiment with different solutions to contribute data that helps reveal recurring patterns, symmetries, and structural features underlying optimal configurations. The goal is not only to identify high-quality solutions, but to better understand the landscape where these solutions exist.
-      </p> 
-      <p>
-        Over time, we hope this collective dataset can help bring attention to notoriously difficult problems, guide future algorithm design, and support progress toward formal proofs for extremal and optimization problems that remain resistant to purely computational approaches.
-      </p>      
-    </div>
-  </main>
-  </body>
-</html>
+{% extends "base.html" %}
 
+
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/about.css') }}">
+{% endblock %}
+
+{% block title %}
+About — extSearch
+{% endblock %}
+
+
+
+{% block content %}
+<main class="page">
+  <h1>About extSearch</h1>
+  <div class="content">
+    <p>
+      extSearch is an open-source platform dedicated to exploring challenging combinatorial optimization problems and mapping the structure of their solution spaces.
+    </p>
+    
+    <p>
+      Through interactive tools and games, users can experiment with different solutions to contribute data that helps reveal recurring patterns, symmetries, and structural features underlying optimal configurations. The goal is not only to identify high-quality solutions, but to better understand the landscape where these solutions exist.
+    </p> 
+    <p>
+      Over time, we hope this collective dataset can help bring attention to notoriously difficult problems, guide future algorithm design, and support progress toward formal proofs for extremal and optimization problems that remain resistant to purely computational approaches.
+    </p>      
+  </div>
+</main>
+{% endblock %}

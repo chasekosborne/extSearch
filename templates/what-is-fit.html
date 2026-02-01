@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block link%}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/what-is-fit.css') }}">
+{%endblock%}
+
+{% block title%}
+What is Fit? — extSearch
+{%endblock%}
+
+
+{% block content %}
+<main class="page">
+  <h1>What is Fit?</h1>
+  <div class="content">
+    <p>
+      Fit is an interactive square packing game that challenges players to arrange identical squares within the smallest possible bounded region.
+    </p>
+    
+    <h2>The Square Packing Problem</h2>
+    <p>
+      Square packing is a classic problem in combinatorial optimization and computational geometry. Given a set of identical squares, the goal is to arrange them so that they fit within the smallest possible rectangular bounding box. While this may seem simple at first glance, finding optimal or even near-optimal packings becomes computationally difficult as the number of squares increases.
+    </p>
+    
+    <p>
+      The square packing problem is related to broader questions in discrete geometry, such as circle packing, bin packing, and the more general <em>packing problem</em> where objects of various shapes must be arranged efficiently. These problems have applications in manufacturing, logistics, computer graphics, and materials science.
+    </p>
+    
+    <h2>How Fit Works</h2>
+    <p>
+      In Fit, players manually place and manipulate squares on a board. Each square can be moved and rotated in 90 degree increments. The challenge is to find arrangements that minimize the bounding box dimensions, the smallest rectangle that can contain all squares.
+    </p>
+    
+    <p>
+      By allowing players to explore different configurations through direct manipulation, Fit creates an intuitive interface for understanding the structure of square packing solutions. Players can experiment with rotations, positions, and spatial relationships that might not be immediately obvious to algorithmic approaches.
+    </p>
+    
+    <h2>Why It Matters</h2>
+    <p>
+      Square packing problems, while seemingly simple, remain open research questions in many cases. Optimal packings for even moderate numbers of squares are not always known, and proving optimality can be extremely difficult. Through collective exploration in Fit, we hope to discover patterns, symmetries, and structural insights that could inform both theoretical understanding and practical algorithms.
+    </p>
+    
+    <p>
+      The data collected from Fit gameplay contributes to ExtSearch's broader mission of mapping solution spaces and understanding the landscape of combinatorial optimization problems. Each player's solutions add to a growing dataset that may reveal hidden regularities or suggest new approaches to these challenging problems.
+    </p>
+  </div>
+</main>
+
+{% endblock %}
