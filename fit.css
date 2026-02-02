@@ -366,4 +366,33 @@ a {
   font-size: 11px;
 }
 
+/* For the "delete all" button */
+.delete-all-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.delete-all-btn:hover {
+  background: #d9363e;
+  transform: scale(1.05);
+}
+
+.delete-all-btn svg {
+  width: 18px;
+  height: 18px;
+}
 
