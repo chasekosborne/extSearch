@@ -181,6 +181,29 @@ function removeSquare(id) {
   updateStats();
 }
 
+/* Delete all stuff 8 */
+const deleteAllBtn = document.getElementById('delete-all');
+
+function deleteAllSquares() {
+  // Clear data model
+  squares.length = 0;
+
+  // Remove square DOM elements
+  board.querySelectorAll('.square').forEach(el => el.remove());
+
+  // Reset selection
+  selectedSquareId = null;
+  dragState = null;
+
+  // Hide data popup
+  squareData.style.display = 'none';
+
+  // Reset bounding box + stats
+  boundingBox.style.display = 'none';
+  updateStats();
+}
+/* Ends here */
+
 function updateSquare(id, updates) {
   const sq = squares.find(function(s) { return s.id === id; });
   if (!sq) return;
@@ -641,7 +664,11 @@ document.addEventListener('pointermove', onPointerMove);
 document.addEventListener('pointerup', onPointerUp);
 board.addEventListener('dblclick', onDoubleClick);
 
+
 document.addEventListener('dragstart', function(e) { e.preventDefault(); });
 
+
+/* Delete all squares */
+deleteAllBtn.addEventListener('click', deleteAllSquares);
 requestAnimationFrame(function() { centerViewOnGrid(); });
 
