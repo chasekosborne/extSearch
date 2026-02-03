@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/about.css') }}">
+{% endblock %}
+
+{% block title %}
+About — extSearch
+{% endblock %}
+
+
+
+{% block content %}
+<main class="page">
+  <h1>About extSearch</h1>
+  <div class="content">
+    <p>
+      extSearch is an open-source platform dedicated to exploring challenging combinatorial optimization problems and mapping the structure of their solution spaces.
+    </p>
+    
+    <p>
+      Through interactive tools and games, users can experiment with different solutions to contribute data that helps reveal recurring patterns, symmetries, and structural features underlying optimal configurations. The goal is not only to identify high-quality solutions, but to better understand the landscape where these solutions exist.
+    </p> 
+    <p>
+      Over time, we hope this collective dataset can help bring attention to notoriously difficult problems, guide future algorithm design, and support progress toward formal proofs for extremal and optimization problems that remain resistant to purely computational approaches.
+    </p>      
+  </div>
+</main>
+{% endblock %}

@@ -70,6 +70,14 @@ a {
   min-height: 100vh;
 }
 
+.top-right-btn {
+    margin-left: auto; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+
 /* Left Panel */
 .panel-left {
   width: 120px;
