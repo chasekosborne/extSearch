@@ -13,6 +13,65 @@ body {
   flex-direction: column;
 }
 
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 80px;
+}
+
+.login-container {
+    width: 420px;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.login-container h2 {
+    font-size: 28px;
+    margin-bottom: 25px;
+}
+
+/* Inputs */
+.login-form input {
+    padding: 12px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+/* Button */
+.login-form button {
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    background: #5599ff;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-form button:hover {
+    background: #4477cc;
+}
+
+/* Labels */
+.login-form label {
+    font-size: 20px;
+    font-weight: 500;
+    color: #444;
+}
+
 a {
   color: inherit;
   text-decoration: none;
