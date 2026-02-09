@@ -26,6 +26,13 @@ Login
 
             <button type="submit">Login</button>
         </form>
-    </div>
+        <div>
+            <a href="{{ url_for('guest') }}" class="top-right-btn" style="color: blue; text-align:center; display: block; margin-top: 16px;">
+                Continue as Guest
+            </a> 
+        </div>
+    </div>    
 </div>
+
+
 {% endblock %}

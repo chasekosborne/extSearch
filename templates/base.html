@@ -22,14 +22,9 @@
                 <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>
 
-            <div class="top-right-dropdown">
-                <button class="top-right-btn">Login</button>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('login') }}">User</a>
-                    <a href="{{ url_for('guest') }}">Guest</a>
-                </div>
-            </div>
-
+            <a href="{{ url_for('login') }}" class="top-right-btn">
+                <button class="top-right-btn">Login </button>
+            </a>
 
         </header>
 
