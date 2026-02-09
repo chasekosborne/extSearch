@@ -67,6 +67,38 @@ h1 {
     margin-bottom: 2px;
 }
 
+.top-right-dropdown {
+    margin-left: 1100px; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.top-right-dropdown:hover .dropdown-content {
+    display: block;
+}
+.top-right-btn {
+    margin-left: auto; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+/* Dropdown content */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+/* Links inside dropdown content */
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
 .subtitle {
     font-size: 18px;
     color: #52525b;

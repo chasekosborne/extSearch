@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+Guest
+{% endblock %}
+
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/guest.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="guest-page">
+    <div class="guest-card">
+        <h2>Continue as Guest</h2>
+        <p>You can explore the app, but some features may be limited.</p>
+
+        <a href="{{ url_for('guest') }}" class="guest-enter-btn">
+            Enter as Guest
+        </a>
+    </div>
+</div>
+{% endblock %}
