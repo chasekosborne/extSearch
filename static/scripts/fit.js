@@ -422,7 +422,9 @@ function squaresOverlap(sq1, sq2) {
 
   // console.log(sq1,sq2);
   // console.log(sq1At,sq2At);
-  console.log(checkCollides(sq1At,sq2At,SQUARE_SIZE)); // Placeholder collision check...
+  // console.log(checkCollides(sq1At,sq2At,SQUARE_SIZE)); // Placeholder collision check...
+
+  return checkCollides(sq1At,sq2At,SQUARE_SIZE);
 
   // Quick AABB check first
   const bounds1 = getRotatedSquareBounds(sq1);
