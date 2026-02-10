@@ -70,5 +70,5 @@ function _checkOverlap(sq1,sq2,sideLength) { // Simple vector collision check sq
 }
 
 function checkCollides(sq1,sq2,sideLength) {
-    return !(_checkOverlap(sq1,sq2,sideLength)) || !(_checkOverlap(sq2,sq1,sideLength)); // Ie. if any return false :: If exists any axis of seperation
+    return (_checkOverlap(sq1,sq2,sideLength)) && (_checkOverlap(sq2,sq1,sideLength)); // Ie. if any return false :: If exists any axis of seperation
 }
