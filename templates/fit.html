@@ -23,17 +23,27 @@ Fit
     </div>
     
     <div class="panel-section">
-    <div class="stats">
-        <div class="stat-row">
-        <span class="stat-label">Squares</span>
-        <span class="stat-value" id="stat-count">0</span>
-        </div>
-        <div class="stat-row">
-        <span class="stat-label">Bounds</span>
-        <span class="stat-value" id="stat-bounds">—</span>
+        <div class="stats">
+            <div class="stat-row">
+                <span class="stat-label">Squares</span>
+                <span id="stat-count">0</span>
+            </div>
+
+            <div class="stat-row; stat-row vertical">
+                <span class="stat-label">Bounds</span>
+
+                <button class="stat-value" id="bounds-card" aria-expanded="false">
+                    <span id="stat-bounds">—</span>
+                </button>
+            </div>
+
         </div>
     </div>
-    </div>
+
+    <button class = "deploy-btn" id = "deploy-btn">
+        Deploy
+    </button>
+    
 </aside>
 
 <!-- Main Board -->

@@ -1,99 +1,106 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: #ffffff;
-      color: #1a1a1a;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    a { 
-      color: inherit; 
-      text-decoration: none;
-    }
-    
-    .header {
-      padding: 16px 24px;
-      border-bottom: 1px solid #e5e5e5;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-    
-    .header .logo {
-      font-weight: 600;
-      font-size: 15px;
-      color: #1a1a1a;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .header .logo img {
-      height: 24px;
-      display: block;
-    }
-    
-    .header nav {
-      display: flex;
-      gap: 24px;
-    }
-    
-    .header nav a {
-      font-size: 14px;
-      color: #71717a;
-      transition: color 0.15s;
-    }
-    
-    .header nav a:hover {
-      color: #1a1a1a;
-    }
-    
-    .page {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 80px 24px;
-      flex: 1;
-    }
-    
-    h1 {
-      font-size: 36px;
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      color: #1a1a1a;
-      margin-bottom: 24px;
-    }
-    
-    .content {
-      font-size: 16px;
-      line-height: 1.7;
-      color: #52525b;
-    }
-    
-    .content p {
-      margin-bottom: 20px;
-    }
-    
-    .content p:last-child {
-      margin-bottom: 0;
-    }
-    
-    .content h2 {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-top: 32px;
-      margin-bottom: 16px;
-    }
-    
-    .content h2:first-of-type {
-      margin-top: 0;
-    }
-    
-    .content em {
-      font-style: italic;
-      color: #1a1a1a;
-    }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: #ffffff;
+  color: #1a1a1a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { 
+  color: inherit; 
+  text-decoration: none;
+}
+
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.header .logo {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header .logo img {
+  height: 24px;
+  display: block;
+}
+
+.header nav {
+  display: flex;
+  gap: 24px;
+}
+
+.header nav a {
+  font-size: 14px;
+  color: #71717a;
+  transition: color 0.15s;
+}
+
+.header nav a:hover {
+  color: #1a1a1a;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 80px 24px;
+  flex: 1;
+}
+
+h1 {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.content {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #52525b;
+}
+
+.content p {
+  margin-bottom: 20px;
+}
+
+.content p:last-child {
+  margin-bottom: 0;
+}
+
+.content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.content h2:first-of-type {
+  margin-top: 0;
+}
+
+.content em {
+  font-style: italic;
+  color: #1a1a1a;
+}
+
+.top-right-btn {
+  margin-left: auto; 
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
