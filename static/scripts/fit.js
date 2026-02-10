@@ -417,6 +417,13 @@ function pointInRotatedSquare(point, sq) {
 
 // Check if two rotated squares overlap using SAT (Separating Axis Theorem)
 function squaresOverlap(sq1, sq2) {
+  var sq1At = convCornersToVec(getSquareCorners(sq1));
+  var sq2At = convCornersToVec(getSquareCorners(sq2));
+
+  // console.log(sq1,sq2);
+  // console.log(sq1At,sq2At);
+  console.log(checkCollides(sq1At,sq2At,SQUARE_SIZE)); // Placeholder collision check...
+
   // Quick AABB check first
   const bounds1 = getRotatedSquareBounds(sq1);
   const bounds2 = getRotatedSquareBounds(sq2);
