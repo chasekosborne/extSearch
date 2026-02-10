@@ -10,11 +10,52 @@
     
     - Working with arrays of corners [A,B,C,D] where A-B A-D adjacent. A is [x,y] array. CONVERSIONS NEEDED
 
-    VERSION 1.0.0 
+    VERSION 1.0.1 
 */
 ///// ===========
 "use strict";
 
-function checkCollides(sq1,sq2) { // Simple vector collision check
-    // ...
+//// Assumes 2d vec
+function vecSub(a,b) { 
+    return [a[0]-b[0],a[1]-b[1]];
+}
+function vecDiv(a,c) {
+    return [a[0]/c,a[1]/c];
+}
+function vecDot(a,b) {
+    return a[0]*b[0] + a[1]*b[1];
+}
+
+
+
+function _checkOverlap(sq1,sq2,sideLength) { // Simple vector collision check sq1->sq2 (directional) collision
+    // Hardcoded 1:A-B check: (square 1)
+    const aPos = sq1[0]; // A point
+    const bPos = sq1[1];
+    const dPos = sq1[-1];
+    var bVec = vecSub(bPos,aPos); // B vec (A origin relative)
+    var bHat = vecDiv(bVec,sideLength); // B Norm vec
+    
+    var sq2Copy = sq2; // Offset sq2
+    sq2Copy = sq2Copy.map(p => vecSub(p,aPos)); // UNTESTED; A origin relative vectors for mapping onto line
+
+    var sq2Map = sq2Copy.map(v => vecDot(bHat,v)); // UNTESTED; Gives proj_BHat(*)
+    var sq2MapSpan = [Math.min(...sq2Map),Math.max(...sq2Map)]; // PROJECTION ON B Hat
+    
+    if ( (0 > sq2MapSpan[1]) || (sideLength < sq2MapSpan[0]) ) { return false; } // Never overlaps, exists axis of seperation...
+
+    // Hardcoded 2: A-D check:
+    var dVec = vecSub(dPos,aPos);
+    var dHat = vecDiv(dVec,sideLength);
+
+    sq2Map = sq2Copy.map(v => vecDot(dHat,v));
+    sq2MapSpan = [Math.min(...sq2Map),Math.max(...sq2Map)]
+
+    if ( (0 > sq2MapSpan[1]) || (sideLength < sq2MapSpan[0]) ) { return false; } 
+
+    return true;
+}
+
+function checkCollides(sq1,sq2,sideLength) {
+    return !(_checkOverlap(sq1,sq2,sideLength)) || !(_checkOverlap(sq2,sq1,sideLength)); // Ie. if any return false :: If exists any axis of seperation
 }
