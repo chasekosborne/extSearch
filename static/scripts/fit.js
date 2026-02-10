@@ -685,6 +685,7 @@ deployBtn.addEventListener('click', () => {
     const organizedBounds = organizeSquareBounds(squareCorners);
     data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
   }
+  console.log(data)
   return data;
 });
 
