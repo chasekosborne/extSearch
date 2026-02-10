@@ -1,0 +1,494 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: #ffffff;
+  color: #1a1a1a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 80px;
+}
+
+.login-container {
+    width: 420px;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.login-container h2 {
+    font-size: 28px;
+    margin-bottom: 25px;
+}
+
+/* Inputs */
+.login-form input {
+    padding: 12px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+/* Button */
+.login-form button {
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    background: #5599ff;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-form button:hover {
+    background: #4477cc;
+}
+
+/* Labels */
+.login-form label {
+    font-size: 20px;
+    font-weight: 500;
+    color: #444;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Header */
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.header .logo {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header .logo img {
+  height: 24px;
+  display: block;
+}
+
+.header nav {
+  display: flex;
+  gap: 24px;
+}
+
+.header nav a {
+  font-size: 14px;
+  color: #71717a;
+  transition: color 0.15s;
+}
+
+.header nav a:hover {
+  color: #1a1a1a;
+}
+
+/* Layout */
+.game-container {
+  display: flex;
+  padding-top: 65px;
+  min-height: 100vh;
+}
+
+.top-right-dropdown {
+    margin-left: 1100px; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.top-right-dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.top-right-btn {
+    margin-left: auto; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Dropdown content */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 200px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+/* Links inside dropdown content */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+
+/* Left Panel */
+.panel-left {
+  width: 120px;
+  padding: 24px 16px;
+  border-right: 1px solid #e5e5e5;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+/* Source square */
+.source-square {
+  width: 56px;
+  height: 56px;
+  background: #5599ff;
+  border: 2px solid #4477cc;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(85, 153, 255, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.source-square:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.source-square:active {
+  cursor: grabbing;
+}
+
+
+/* Stats */
+.stats {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  color: #71717a;
+}
+
+.stat-value {
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+/* Board area */
+.board-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+
+.board-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+}
+
+.board-zoom-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.board-transform {
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
+  position: relative;
+}
+
+/* Board - large canvas so grid continues when zoomed out */
+.board {
+  width: 10000px;
+  height: 10000px;
+  min-width: 10000px;
+  min-height: 10000px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+}
+
+/* Grid pattern - repeats across entire board */
+.board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(#e5e5e5 1px, transparent 1px),
+    linear-gradient(90deg, #e5e5e5 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  background-repeat: repeat;
+}
+
+/* Squares */
+.square {
+  width: 56px;
+  height: 56px;
+  background: #5599ff;
+  border: 2px solid #4477cc;
+  position: absolute;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.square:active {
+  cursor: grabbing;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.square.mode-rotate {
+  background: #ff0000;
+  border-color: #cc0000;
+  box-shadow: 0 0 0 2px #ff3333, 0 2px 8px rgba(255, 0, 0, 0.25);
+}
+
+.square.not-selected {
+  background: #cccccc;
+  border-color: #aaaaaa;
+}
+
+.square.selected {
+  background: #5599ff;
+  border-color: #4477cc;
+}
+
+.square.mode-rotate.selected {
+  background: #ff0000;
+  border-color: #cc0000;
+}
+
+
+/* Delete zone */
+.delete-zone {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 56px;
+  border: 2px dashed #d4d4d4;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #71717a;
+  font-size: 13px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.delete-zone.active {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.delete-zone svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Ghost square */
+.ghost-square {
+  width: 56px;
+  height: 56px;
+  background: #5599ff;
+  border: 2px solid #4477cc;
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: none;
+}
+
+/* Bounding box */
+.bounding-box {
+  position: absolute;
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  pointer-events: none;
+  z-index: 1;
+  display: none;
+}
+
+/* Square data display */
+.square-data {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: none;
+}
+
+.square-data.data-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+}
+
+.square-data .data-label {
+  color: #71717a;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.square-data .data-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.square-data .data-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.square-data .data-input {
+  width: 52px;
+  padding: 4px 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #1a1a1a;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  outline: none;
+}
+
+.square-data .data-input:focus {
+  border-color: #5599ff;
+  box-shadow: 0 0 0 2px rgba(85, 153, 255, 0.2);
+}
+
+.square-data.data-error .data-input {
+  border-color: #ef4444;
+}
+
+.square-data .data-row label {
+  color: #71717a;
+  font-size: 10px;
+  min-width: 12px;
+}
+
+.square-data .data-unit {
+  color: #71717a;
+  font-size: 11px;
+}
+
+/* For the "delete all" button */
+.delete-all-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.delete-all-btn:hover {
+  background: #d9363e;
+  transform: scale(1.05);
+}
+
+.delete-all-btn svg {
+  width: 18px;
+  height: 18px;
+}
+

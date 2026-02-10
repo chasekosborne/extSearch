@@ -1,0 +1,136 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a { 
+    color: inherit; 
+    text-decoration: none;
+}
+
+.header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.header .logo {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header .logo img {
+    height: 24px;
+    display: block;
+}
+
+.header nav {
+    display: flex;
+    gap: 24px;
+}
+
+.header nav a {
+    font-size: 14px;
+    color: #71717a;
+    transition: color 0.15s;
+}
+
+.header nav a:hover {
+    color: #1a1a1a;
+}
+
+.page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    flex: 1;
+}
+
+h1 {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+}
+
+.top-right-dropdown {
+    margin-left: 1100px; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.top-right-dropdown:hover .dropdown-content {
+    display: block;
+}
+.top-right-btn {
+    margin-left: auto; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+/* Dropdown content */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+/* Links inside dropdown content */
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: #52525b;
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+.cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #ececec;
+    color: #1a1a1a;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.15s;
+}
+
+.cta:hover {
+    background: #d8d8d8;
+    transform: translateY(-1px);
+}
+
+.cta svg {
+    width: 16px;
+    height: 16px;
+}
+
+.cta-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+}

@@ -9,7 +9,8 @@ body {
   background: #ffffff;
   color: #1a1a1a;
   min-height: 100vh;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 a {
@@ -69,6 +70,42 @@ a {
   padding-top: 65px;
   min-height: 100vh;
 }
+
+.top-right-dropdown {
+    margin-left: 1100px; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.top-right-dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.top-right-btn {
+    margin-left: auto; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Dropdown content */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 200px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+/* Links inside dropdown content */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
 
 /* Left Panel */
 .panel-left {
@@ -366,4 +403,73 @@ a {
   font-size: 11px;
 }
 
+/* For the "delete all" button */
+.delete-all-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
 
+.delete-all-btn:hover {
+  background: #d9363e;
+  transform: scale(1.05);
+}
+
+.delete-all-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Guest Login */
+.guest-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 80px; /* header space */
+}
+
+.guest-card {
+    width: 420px;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    text-align: center;
+}
+
+.guest-card h2 {
+    margin-bottom: 12px;
+}
+
+.guest-card p {
+    color: #666;
+    margin-bottom: 24px;
+}
+
+.guest-enter-btn {
+    display: inline-block;
+    padding: 12px 18px;
+    border-radius: 8px;
+    background: #5599ff;
+    color: white;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.guest-enter-btn:hover {
+    background: #4477cc;
+}

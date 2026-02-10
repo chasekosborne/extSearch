@@ -1,0 +1,39 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" type="image/png" href="Img/Icon.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        
+        {% block link %} STYLE LINK {% endblock %}
+        <title> {% block title %} HTML TITLE {% endblock %} </title>
+    </head>
+
+    <body>
+        <header class="header">
+            <a href="{{ url_for('home') }}" class="logo">
+                <img src="{{ url_for('static', filename='img/Icon.png') }}" alt="ExtSearch" />
+            </a>
+            
+            <nav>
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </nav>
+
+            <div class="top-right-dropdown">
+                <button class="top-right-btn">Login</button>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('login') }}">User</a>
+                    <a href="{{ url_for('guest') }}">Guest</a>
+                </div>
+            </div>
+
+
+        </header>
+
+        {% block content %} HTML BODY {%endblock%}
+        {% block script %} {%endblock%}
+    </body>
+</html>
