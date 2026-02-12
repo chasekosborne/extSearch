@@ -2,7 +2,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" type="image/png" href="Img/Icon.png">
+        <link rel="icon" type="image/png" href="static/img/Icon.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -17,13 +17,15 @@
                 <img src="{{ url_for('static', filename='img/Icon.png') }}" alt="ExtSearch" />
             </a>
             
+            {% if request.endpoint != 'fit' %}
             <nav>
                 <a href="{{ url_for('about') }}">About</a>
                 <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>
+            {% endif %}
 
             <a href="{{ url_for('login') }}" class="top-right-btn">
-                <button class="top-right-btn">Login </button>
+                <button class="top-right-btn">Login</button>
             </a>
 
         </header>

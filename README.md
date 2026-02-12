@@ -9,4 +9,4 @@ The extSearch framework contains source code for:
 - Up-to-Date database of user-submitted solutions for each problem hosted on the platform
 
 # Documentation
-Documentation for all individual components of the extFramework are included in the `docs` folder, documentation is formatted using [MkDocs](https://www.mkdocs.org/), which can be recompiled using the guide [here](https://www.mkdocs.org/getting-started/)
+Documentation for all individual components of the extFramework are included in the `docs` folder, documentation is formatted using [MkDocs](https://www.mkdocs.org/), which can be recompiled using the guide [here](https://www.mkdocs.org/getting-started/).

@@ -118,7 +118,8 @@ function updateStats() {
     
     const maxSide = Math.max((maxX - minX) / SQUARE_SIZE, (maxY - minY) / SQUARE_SIZE);
     
-    const precision = isExpanded ? 13 : 1;
+    // Show 14 decimals when expanded (default), 2 decimals when collapsed
+    const precision = isExpanded ? 14 : 2;
     const maxSideStr = maxSide.toFixed(precision).replace(/\.?0+$/, '');
     
     statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
@@ -673,7 +674,8 @@ function organizeSquareBounds(squaresCorners) {
 }
 
 card.addEventListener('click', function() {
-    this.classList.toggle('expanded'); 
+    this.classList.toggle('expanded');
+    this.setAttribute('aria-expanded', this.classList.contains('expanded'));
     updateStats(); 
 });
 

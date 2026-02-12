@@ -5,14 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Overview - extSearch Docs</title>
+    <title>Fit - extSearch Docs</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Overview";
+        var mkdocs_page_name = "Fit";
         var mkdocs_page_input_path = "fit.md";
         var mkdocs_page_url = null;
       </script>
@@ -57,7 +57,7 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
-      <li class="breadcrumb-item active">Overview</li>
+      <li class="breadcrumb-item active">Fit</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -66,43 +66,327 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h1 id="overview">Overview</h1>
-<p>Fit is the first 'game' developed to generate a large dataset of square packing solutions.</p>
-<h1 id="functions">Functions</h1>
-<h2 id="applytransform">applyTransform()</h2>
-<p>Responsible for moving the grid as well as zooming in/out of the grid view.</p>
-<h2 id="centerviewongrid">centerViewOnGrid()</h2>
-<p>Resets the grid view back to the center of the grid.</p>
-<h2 id="clienttoboard">clientToBoard()</h2>
-<p>Convert from pixels to square length units.</p>
-<h2 id="isinsideboardviewport">isInsideBoardViewport()</h2>
-<h2 id="getboardsize">getBoardSize()</h2>
-<h2 id="getrotatedsquareboundssq">getRotatedSquareBounds(sq)</h2>
-<h2 id="updatestats">updateStats()</h2>
-<h2 id="createsquareel">createSquareEl()</h2>
-<h2 id="addsquare">addSquare()</h2>
-<h2 id="removesquare">removeSquare()</h2>
-<h2 id="deleteallsquares">deleteAllSquares()</h2>
-<h2 id="updatesquare">updateSquare()</h2>
-<h2 id="updateallsquareclasses">updateAllSquareClasses()</h2>
-<h2 id="formersquareunit">formerSquareUnit()</h2>
-<h2 id="formatrotation">formatRotation()</h2>
-<h2 id="pixeltocenterx">pixelToCenterX()</h2>
-<h2 id="pixeltocentery">pixelToCenterY()</h2>
-<h2 id="centertopixelx">centerToPixelX()</h2>
-<h2 id="centertopixely">centerToPixelY()</h2>
-<h2 id="applysquaredatainputs">applySquareDataInputs()</h2>
-<h2 id="updatesquaredatadisplay">updateSquareDataDisplay()</h2>
-<h2 id="getsquarecorners">getSquareCorners()</h2>
-<h2 id="pointinrotatedsquare">pointInRotatedSquare()</h2>
-<h2 id="squaresoverlap">squaresOverlap()</h2>
-<h2 id="wouldcollide">wouldCollide()</h2>
-<h2 id="isindeletezone">isInDeleteZone()</h2>
-<h2 id="onpointerdown">onPointerDown()</h2>
-<h2 id="onpointermove">onPointerMove()</h2>
-<h2 id="onpointerup">onPointerUp()</h2>
-<h2 id="ondoubleclick">onDoubleClick()</h2>
-<h2 id="onwheel">onWheel()</h2>
+                <h2 id="overview">Overview</h2>
+<p>The Fit game UI is implemented in <code>static/scripts/fit.js</code>.<br />
+It is a plain JavaScript file (no frameworks) that:</p>
+<ul>
+<li>Maintains an in‑memory model of all squares on the board.</li>
+<li>Projects that model onto the DOM (creating and updating <code>.square</code> elements).</li>
+<li>Computes geometry (bounding square side length, collision detection).</li>
+<li>Prepares data to be sent to the backend for scoring / storage.</li>
+</ul>
+<p>This page documents the main concepts and functions in <code>fit.js</code> so you can safely extend or reuse it.</p>
+<hr />
+<h2 id="core-concepts">Core concepts</h2>
+<h3 id="coordinate-system-and-board">Coordinate system and board</h3>
+<ul>
+<li>The board is a large fixed canvas:</li>
+<li><code>BOARD_SIZE = 10000</code></li>
+<li>Logical center: <code>BOARD_CENTER = BOARD_SIZE / 2</code></li>
+<li>Squares are axis-aligned in board space, but can be rotated around their centers.</li>
+<li>Each square has:</li>
+<li><code>id</code> – string like <code>"sq-3"</code>.</li>
+<li><code>x</code>, <code>y</code> – top‑left corner in board pixels.</li>
+<li><code>rotation</code> – degrees, 0–360.</li>
+<li><code>mode</code> – <code>'move'</code> (drag translation) or <code>'rotate'</code> (drag rotation).</li>
+</ul>
+<p>The camera is implemented via:</p>
+<ul>
+<li><code>zoom</code> – scalar scale factor.</li>
+<li><code>panX</code>, <code>panY</code> – translation (in screen pixels) applied to the whole board.</li>
+</ul>
+<p>These are applied through a CSS transform on the <code>#board-transform</code> element.</p>
+<h3 id="data-model">Data model</h3>
+<ul>
+<li><code>squares</code> – array holding the current squares.</li>
+<li><code>selectedSquareId</code> – <code>id</code> of the currently selected square (or <code>null</code>).</li>
+<li><code>dragState</code> – transient state while dragging/rotating/creating.</li>
+</ul>
+<p>All rendering is derived from these values; DOM elements are updated via helper functions instead of being the source of truth.</p>
+<hr />
+<h2 id="view-camera-helpers">View / camera helpers</h2>
+<h3 id="applytransform"><code>applyTransform()</code></h3>
+<p>Applies the current <code>panX</code>, <code>panY</code>, and <code>zoom</code> as a CSS transform to <code>#board-transform</code>:</p>
+<ul>
+<li>Called whenever the user zooms or pans.</li>
+<li>Keeps the board visually in sync with the logical camera state.</li>
+</ul>
+<h3 id="centerviewongrid"><code>centerViewOnGrid()</code></h3>
+<p>Re‑centers the camera so that the logical board center (<code>BOARD_CENTER</code>) is in the middle of the viewport:</p>
+<ul>
+<li>Uses the current zoom level.</li>
+<li>Called on initial load (<code>requestAnimationFrame(...)</code> at the bottom of the file).</li>
+</ul>
+<h3 id="clienttoboardclientx-clienty"><code>clientToBoard(clientX, clientY)</code></h3>
+<p>Converts browser client coordinates (e.g. from pointer events) into board coordinates:</p>
+<ul>
+<li>Subtracts the board container’s top‑left.</li>
+<li>Inverts the current pan + zoom transform.</li>
+<li>Used throughout drag/rotate handlers to keep interactions independent of zoom.</li>
+</ul>
+<h3 id="isinsideboardviewportclientx-clienty"><code>isInsideBoardViewport(clientX, clientY)</code></h3>
+<p>Returns <code>true</code> if a client point is inside the visible board viewport:</p>
+<ul>
+<li>Used when dropping a new square to ensure we only create it on the board.</li>
+</ul>
+<h3 id="getboardsize"><code>getBoardSize()</code></h3>
+<p>Returns <code>{ width: BOARD_SIZE, height: BOARD_SIZE }</code>.<br />
+Abstracted so the board size can be changed in one place.</p>
+<h3 id="onwheele"><code>onWheel(e)</code></h3>
+<p>Mouse wheel handler for zoom:</p>
+<ul>
+<li>Computes the logical point under the cursor (before zoom).</li>
+<li>Adjusts <code>zoom</code> within <code>[ZOOM_MIN, ZOOM_MAX]</code>.</li>
+<li>Recomputes <code>panX</code>, <code>panY</code> so that the point under the cursor stays fixed on screen.</li>
+<li>Calls <code>applyTransform()</code>.</li>
+</ul>
+<hr />
+<h2 id="geometry-and-stats">Geometry and stats</h2>
+<h3 id="getrotatedsquareboundssq"><code>getRotatedSquareBounds(sq)</code></h3>
+<p>Given a square (<code>x</code>, <code>y</code>, <code>rotation</code>), computes its axis-aligned bounding box:</p>
+<ol>
+<li>Compute the center point.</li>
+<li>Rotate the four corners around the center.</li>
+<li>Take min/max over all rotated corners.</li>
+</ol>
+<p>Returns <code>{ minX, minY, maxX, maxY }</code>.<br />
+Used for:</p>
+<ul>
+<li>Bounding box / objective value calculation.</li>
+<li>Checking popup placement for the square data UI.</li>
+</ul>
+<h3 id="updatestats"><code>updateStats()</code></h3>
+<p>Updates:</p>
+<ul>
+<li><code>Squares</code> count.</li>
+<li>Bounding square side length (in square units).</li>
+<li>Visual dashed bounding box overlay.</li>
+</ul>
+<p>Logic:</p>
+<ol>
+<li>If there are no squares:</li>
+<li>Show <code>—</code> and hide the bounding box.</li>
+<li>For each square:</li>
+<li>Use <code>getRotatedSquareBounds</code> to expand a global bounding box.</li>
+<li>Compute side lengths in square units:</li>
+<li><code>maxSide = max((maxX - minX), (maxY - minY)) / SQUARE_SIZE</code></li>
+<li>Render text as <code>maxSide × maxSide</code>:</li>
+<li>Precision: <code>1</code> decimal normally, <code>13</code> when the “bounds card” (<code>#bounds-card</code>) is expanded.</li>
+<li>Render a visual square bounding box in board space.</li>
+</ol>
+<h3 id="getsquarecornerssq-pointinrotatedsquarepoint-sq-squaresoverlapsq1-sq2-wouldcollidetestsq-excludeid"><code>getSquareCorners(sq)</code>, <code>pointInRotatedSquare(point, sq)</code>, <code>squaresOverlap(sq1, sq2)</code>, <code>wouldCollide(testSq, excludeId)</code></h3>
+<p>These implement rotated-square collision detection:</p>
+<ul>
+<li><code>getSquareCorners</code>:</li>
+<li>Returns the four corners of a rotated square in board coordinates.</li>
+<li><code>pointInRotatedSquare</code>:</li>
+<li>Converts a point into the square’s local (unrotated) space and checks if it lies inside the axis-aligned bounds.</li>
+<li><code>squaresOverlap</code>:</li>
+<li>Fast AABB check using <code>getRotatedSquareBounds</code>.</li>
+<li>Then checks if any corner of either square lies inside the other.</li>
+<li>Includes an extra “close centers” heuristic to catch edge-only overlaps.</li>
+<li><code>wouldCollide</code>:</li>
+<li>Returns <code>true</code> if <code>testSq</code> intersects any existing square except <code>excludeId</code>.</li>
+<li>Used before moving/rotating/creating squares to enforce non-overlap.</li>
+</ul>
+<h3 id="organizesquareboundssquarescorners-and-deploy-button"><code>organizeSquareBounds(squaresCorners)</code> and deploy button</h3>
+<p>Utility for exporting square bounds:</p>
+<ul>
+<li><code>organizeSquareBounds</code>:</li>
+<li>Given the corners of a square, returns <code>{ top, right, bottom, left }</code> based on min/max x/y.</li>
+<li>Deploy button handler (<code>deployBtn.addEventListener('click', ...)</code>):</li>
+<li>Builds an array for all squares of <code>[top, right, bottom, left]</code> corner objects.</li>
+<li>Currently logs this data to the console; intended as a helper for piping Fit layouts into external tools.</li>
+</ul>
+<hr />
+<h2 id="square-lifecycle-and-data-panel">Square lifecycle and data panel</h2>
+<h3 id="creating-and-deleting-squares">Creating and deleting squares</h3>
+<ul>
+<li><code>createSquareEl(sq)</code><br />
+  Creates a <code>.square</code> DOM element for a given square:</li>
+<li>Applies the correct <code>className</code> based on <code>sq.mode</code> (<code>move</code> vs <code>rotate</code>).</li>
+<li>
+<p>Sets <code>data-id</code>, <code>left</code>, <code>top</code>, and <code>rotate(...)</code>.</p>
+</li>
+<li>
+<p><code>addSquare(x, y)</code><br />
+  Creates a new logical square and its DOM node:</p>
+</li>
+<li>Clamps position within the board.</li>
+<li>Default <code>rotation = 0</code>, <code>mode = 'move'</code>.</li>
+<li>Uses <code>wouldCollide</code> to avoid overlapping an existing square; if it would collide, the square is not added.</li>
+<li>
+<p>Pushes into <code>squares</code>, appends DOM, selects it, refreshes UI + stats.</p>
+</li>
+<li>
+<p><code>removeSquare(id)</code><br />
+  Deletes a single square:</p>
+</li>
+<li>Removes from <code>squares</code>.</li>
+<li>Removes corresponding DOM element.</li>
+<li>Clears selection if it was selected.</li>
+<li>
+<p>Updates classes + stats.</p>
+</li>
+<li>
+<p><code>deleteAllSquares()</code><br />
+  Bulk-clear:</p>
+</li>
+<li>Empties <code>squares</code>.</li>
+<li>Removes all <code>.square</code> elements from the DOM.</li>
+<li>Resets selection and drag state.</li>
+<li>Hides the data popup and bounding box.</li>
+<li>Calls <code>updateStats()</code>.</li>
+</ul>
+<h3 id="updating-squares-and-classes">Updating squares and classes</h3>
+<ul>
+<li><code>updateSquare(id, updates)</code>  </li>
+<li>Merges <code>updates</code> into the square with given id.</li>
+<li>Re-applies DOM position and rotation.</li>
+<li>
+<p>Refreshes classes, data popup, and stats.</p>
+</li>
+<li>
+<p><code>updateAllSquareClasses()</code>  </p>
+</li>
+<li>Recomputes the CSS classes for each square based on:<ul>
+<li>Its <code>mode</code> (<code>move</code> vs <code>rotate</code>).</li>
+<li>Whether it is selected (<code>selectedSquareId</code>).</li>
+<li>Whether some other square is being dragged (adds <code>not-selected</code> for context).</li>
+</ul>
+</li>
+</ul>
+<h3 id="number-formatting-and-coordinate-helpers">Number formatting and coordinate helpers</h3>
+<ul>
+<li><code>formatSquareUnit(v)</code>  </li>
+<li>Formats a numeric value with up to 13 decimal places, trimming trailing zeros.</li>
+<li><code>formatRotation(v)</code>  </li>
+<li>Formats rotation to 1 decimal place.</li>
+<li>Pixel/center conversions:</li>
+<li><code>pixelToCenterX</code>, <code>pixelToCenterY</code> convert <code>x</code>, <code>y</code> board pixels into square‑based center offsets (used in the data panel).</li>
+<li><code>centerToPixelX</code>, <code>centerToPixelY</code> do the inverse.</li>
+</ul>
+<h3 id="data-panel-applysquaredatainputs-setupsquaredatainputhandlers-updatesquaredatadisplay">Data panel: <code>applySquareDataInputs</code>, <code>setupSquareDataInputHandlers</code>, <code>updateSquareDataDisplay</code></h3>
+<p>The data panel is the small popup shown near the selected square with precise position and rotation inputs.</p>
+<ul>
+<li><code>updateSquareDataDisplay()</code>:</li>
+<li>If no square is selected, hides the panel.</li>
+<li>
+<p>Otherwise:</p>
+<ul>
+<li>Renders a small form with:</li>
+<li><code>x</code>, <code>y</code> (center offsets from global center).</li>
+<li><code>rotation</code> (degrees).</li>
+<li>Calls <code>setupSquareDataInputHandlers()</code> to wire events.</li>
+<li>Positions the panel around the square (tries several candidate positions to avoid overlapping the board edges or other squares).</li>
+</ul>
+</li>
+<li>
+<p><code>setupSquareDataInputHandlers()</code>:</p>
+</li>
+<li>
+<p>Registers <code>blur</code> and <code>Enter</code> key handlers on the inputs to trigger <code>applySquareDataInputs()</code>.</p>
+</li>
+<li>
+<p><code>applySquareDataInputs()</code>:</p>
+</li>
+<li>Parses user-entered <code>x</code>, <code>y</code>, <code>rotation</code>.</li>
+<li>Validates them; on invalid input, reverts UI and flashes an error state.</li>
+<li>Converts desired center coordinates back into board pixels.</li>
+<li>Normalizes rotation into <code>[0, 360)</code> and checks for collisions via <code>wouldCollide</code>.</li>
+<li>If valid and non-colliding, calls <code>updateSquare(...)</code> to commit the change.</li>
+</ul>
+<hr />
+<h2 id="interaction-handlers">Interaction handlers</h2>
+<p>These functions connect user input (pointer/mouse) to updates in the <code>squares</code> array and the DOM.</p>
+<h3 id="onpointerdowne"><code>onPointerDown(e)</code></h3>
+<p>Entry point for most interactions:</p>
+<ul>
+<li>If the source square (<code>#source</code>) is clicked:</li>
+<li>Start a create drag:<ul>
+<li>Show the ghost square.</li>
+<li>Clear selection.</li>
+</ul>
+</li>
+<li>If the main board is clicked (not on a square or popup):</li>
+<li>Clear selection.</li>
+<li>If a square is clicked:</li>
+<li>Select it, update UI.</li>
+<li>If the square is in rotate mode:<ul>
+<li>Start a <code>type: 'rotate'</code> drag:</li>
+<li>Record starting angle (<code>startAngle</code>) between cursor and square center.</li>
+<li>Record <code>startRotation</code>.</li>
+</ul>
+</li>
+<li>Else:<ul>
+<li>Start a <code>type: 'move'</code> drag:</li>
+<li>Record offset between cursor and square position so dragging feels natural.</li>
+</ul>
+</li>
+</ul>
+<h3 id="onpointermovee"><code>onPointerMove(e)</code></h3>
+<p>Updates state while dragging:</p>
+<ul>
+<li>Create drag:</li>
+<li>Moves the ghost square under the cursor.</li>
+<li>Move drag:</li>
+<li>Computes new candidate position.</li>
+<li>Clamps into the board.</li>
+<li>Uses <code>wouldCollide</code> to prevent overlaps; only updates if move is collision-free.</li>
+<li>Toggles the delete zone highlight when hovering over it.</li>
+<li>Rotate drag:</li>
+<li>Computes the new angle between the cursor and square center.</li>
+<li>Adds the delta to the initial rotation, normalizes to <code>[0, 360)</code>.</li>
+<li>Uses <code>wouldCollide</code> to block rotations that would cause overlaps.</li>
+</ul>
+<h3 id="onpointerupe"><code>onPointerUp(e)</code></h3>
+<p>Finalizes interactions:</p>
+<ul>
+<li>Create:</li>
+<li>Hides the ghost.</li>
+<li>If the drop is inside the board viewport, calls <code>addSquare(...)</code>.</li>
+<li>Move:</li>
+<li>If the square is released over the delete zone, removes it.</li>
+<li>Resets z‑index and delete zone highlight.</li>
+<li>Rotate:</li>
+<li>Resets z‑index.</li>
+<li>Clears <code>dragState</code> and refreshes classes.</li>
+</ul>
+<h3 id="ondoubleclicke"><code>onDoubleClick(e)</code></h3>
+<p>Double‑clicking a square toggles its mode:</p>
+<ul>
+<li><code>'move'</code> → <code>'rotate'</code> → <code>'move'</code> → …</li>
+<li>Visually indicated via CSS (<code>.mode-rotate</code>).</li>
+</ul>
+<hr />
+<h2 id="wiring-and-initialization">Wiring and initialization</h2>
+<p>At the bottom of <code>fit.js</code>, the event listeners are attached:</p>
+<ul>
+<li>Board / camera:</li>
+<li><code>boardZoomContainer.addEventListener('wheel', onWheel, { passive: false })</code></li>
+<li>Pointer events:</li>
+<li><code>document.addEventListener('pointerdown', onPointerDown)</code></li>
+<li><code>document.addEventListener('pointermove', onPointerMove)</code></li>
+<li><code>document.addEventListener('pointerup', onPointerUp)</code></li>
+<li><code>board.addEventListener('dblclick', onDoubleClick)</code></li>
+<li>Delete all:</li>
+<li><code>deleteAllBtn.addEventListener('click', deleteAllSquares)</code></li>
+<li>Ghost drag:</li>
+<li><code>document.addEventListener('dragstart', e =&gt; e.preventDefault())</code></li>
+<li>Initial centering:</li>
+<li><code>requestAnimationFrame(() =&gt; centerViewOnGrid())</code></li>
+</ul>
+<p>This means:</p>
+<ul>
+<li>All pointer interactions are global (attached on <code>document</code>), so they work even if the pointer leaves the board while dragging.</li>
+<li>The visual state of the board is always derived from <code>squares</code>, <code>selectedSquareId</code>, <code>dragState</code>, <code>zoom</code>, and <code>pan</code>.</li>
+</ul>
+<p>With this mental model and the function breakdown above, you should be able to:</p>
+<ul>
+<li>Add new interaction modes (e.g. pinning squares).</li>
+<li>Export/import layouts.</li>
+<li>Extend the UI while keeping behavior consistent.</li>
+</ul>
               
             </div>
           </div><footer>

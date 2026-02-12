@@ -1,43 +1,325 @@
-# Overview
-Fit is the first 'game' developed to generate a large dataset of square packing solutions.
+## Overview
 
-# Functions
-## applyTransform()
-Responsible for moving the grid as well as zooming in/out of the grid view.
+The Fit game UI is implemented in `static/scripts/fit.js`.  
+It is a plain JavaScript file (no frameworks) that:
 
-## centerViewOnGrid()
-Resets the grid view back to the center of the grid.
+- Maintains an in‑memory model of all squares on the board.
+- Projects that model onto the DOM (creating and updating `.square` elements).
+- Computes geometry (bounding square side length, collision detection).
+- Prepares data to be sent to the backend for scoring / storage.
 
-## clientToBoard()
-Convert from pixels to square length units.
+This page documents the main concepts and functions in `fit.js` so you can safely extend or reuse it.
 
-## isInsideBoardViewport()
+---
 
+## Core concepts
 
-## getBoardSize()
-## getRotatedSquareBounds(sq)
-## updateStats()
-## createSquareEl()
-## addSquare()
-## removeSquare()
-## deleteAllSquares()
-## updateSquare()
-## updateAllSquareClasses()
-## formerSquareUnit()
-## formatRotation()
-## pixelToCenterX()
-## pixelToCenterY()
-## centerToPixelX()
-## centerToPixelY()
-## applySquareDataInputs()
-## updateSquareDataDisplay()
-## getSquareCorners()
-## pointInRotatedSquare()
-## squaresOverlap()
-## wouldCollide()
-## isInDeleteZone()
-## onPointerDown()
-## onPointerMove()
-## onPointerUp()
-## onDoubleClick()
-## onWheel()
+### Coordinate system and board
+
+- The board is a large fixed canvas:
+  - `BOARD_SIZE = 10000`
+  - Logical center: `BOARD_CENTER = BOARD_SIZE / 2`
+- Squares are axis-aligned in board space, but can be rotated around their centers.
+- Each square has:
+  - `id` – string like `"sq-3"`.
+  - `x`, `y` – top‑left corner in board pixels.
+  - `rotation` – degrees, 0–360.
+  - `mode` – `'move'` (drag translation) or `'rotate'` (drag rotation).
+
+The camera is implemented via:
+
+- `zoom` – scalar scale factor.
+- `panX`, `panY` – translation (in screen pixels) applied to the whole board.
+
+These are applied through a CSS transform on the `#board-transform` element.
+
+### Data model
+
+- `squares` – array holding the current squares.
+- `selectedSquareId` – `id` of the currently selected square (or `null`).
+- `dragState` – transient state while dragging/rotating/creating.
+
+All rendering is derived from these values; DOM elements are updated via helper functions instead of being the source of truth.
+
+---
+
+## View / camera helpers
+
+### `applyTransform()`
+
+Applies the current `panX`, `panY`, and `zoom` as a CSS transform to `#board-transform`:
+
+- Called whenever the user zooms or pans.
+- Keeps the board visually in sync with the logical camera state.
+
+### `centerViewOnGrid()`
+
+Re‑centers the camera so that the logical board center (`BOARD_CENTER`) is in the middle of the viewport:
+
+- Uses the current zoom level.
+- Called on initial load (`requestAnimationFrame(...)` at the bottom of the file).
+
+### `clientToBoard(clientX, clientY)`
+
+Converts browser client coordinates (e.g. from pointer events) into board coordinates:
+
+- Subtracts the board container’s top‑left.
+- Inverts the current pan + zoom transform.
+- Used throughout drag/rotate handlers to keep interactions independent of zoom.
+
+### `isInsideBoardViewport(clientX, clientY)`
+
+Returns `true` if a client point is inside the visible board viewport:
+
+- Used when dropping a new square to ensure we only create it on the board.
+
+### `getBoardSize()`
+
+Returns `{ width: BOARD_SIZE, height: BOARD_SIZE }`.  
+Abstracted so the board size can be changed in one place.
+
+### `onWheel(e)`
+
+Mouse wheel handler for zoom:
+
+- Computes the logical point under the cursor (before zoom).
+- Adjusts `zoom` within `[ZOOM_MIN, ZOOM_MAX]`.
+- Recomputes `panX`, `panY` so that the point under the cursor stays fixed on screen.
+- Calls `applyTransform()`.
+
+---
+
+## Geometry and stats
+
+### `getRotatedSquareBounds(sq)`
+
+Given a square (`x`, `y`, `rotation`), computes its axis-aligned bounding box:
+
+1. Compute the center point.
+2. Rotate the four corners around the center.
+3. Take min/max over all rotated corners.
+
+Returns `{ minX, minY, maxX, maxY }`.  
+Used for:
+
+- Bounding box / objective value calculation.
+- Checking popup placement for the square data UI.
+
+### `updateStats()`
+
+Updates:
+
+- `Squares` count.
+- Bounding square side length (in square units).
+- Visual dashed bounding box overlay.
+
+Logic:
+
+1. If there are no squares:
+   - Show `—` and hide the bounding box.
+2. For each square:
+   - Use `getRotatedSquareBounds` to expand a global bounding box.
+3. Compute side lengths in square units:
+   - `maxSide = max((maxX - minX), (maxY - minY)) / SQUARE_SIZE`
+4. Render text as `maxSide × maxSide`:
+   - Precision: `1` decimal normally, `13` when the “bounds card” (`#bounds-card`) is expanded.
+5. Render a visual square bounding box in board space.
+
+### `getSquareCorners(sq)`, `pointInRotatedSquare(point, sq)`, `squaresOverlap(sq1, sq2)`, `wouldCollide(testSq, excludeId)`
+
+These implement rotated-square collision detection:
+
+- `getSquareCorners`:
+  - Returns the four corners of a rotated square in board coordinates.
+- `pointInRotatedSquare`:
+  - Converts a point into the square’s local (unrotated) space and checks if it lies inside the axis-aligned bounds.
+- `squaresOverlap`:
+  - Fast AABB check using `getRotatedSquareBounds`.
+  - Then checks if any corner of either square lies inside the other.
+  - Includes an extra “close centers” heuristic to catch edge-only overlaps.
+- `wouldCollide`:
+  - Returns `true` if `testSq` intersects any existing square except `excludeId`.
+  - Used before moving/rotating/creating squares to enforce non-overlap.
+
+### `organizeSquareBounds(squaresCorners)` and deploy button
+
+Utility for exporting square bounds:
+
+- `organizeSquareBounds`:
+  - Given the corners of a square, returns `{ top, right, bottom, left }` based on min/max x/y.
+- Deploy button handler (`deployBtn.addEventListener('click', ...)`):
+  - Builds an array for all squares of `[top, right, bottom, left]` corner objects.
+  - Currently logs this data to the console; intended as a helper for piping Fit layouts into external tools.
+
+---
+
+## Square lifecycle and data panel
+
+### Creating and deleting squares
+
+- `createSquareEl(sq)`  
+  Creates a `.square` DOM element for a given square:
+  - Applies the correct `className` based on `sq.mode` (`move` vs `rotate`).
+  - Sets `data-id`, `left`, `top`, and `rotate(...)`.
+
+- `addSquare(x, y)`  
+  Creates a new logical square and its DOM node:
+  - Clamps position within the board.
+  - Default `rotation = 0`, `mode = 'move'`.
+  - Uses `wouldCollide` to avoid overlapping an existing square; if it would collide, the square is not added.
+  - Pushes into `squares`, appends DOM, selects it, refreshes UI + stats.
+
+- `removeSquare(id)`  
+  Deletes a single square:
+  - Removes from `squares`.
+  - Removes corresponding DOM element.
+  - Clears selection if it was selected.
+  - Updates classes + stats.
+
+- `deleteAllSquares()`  
+  Bulk-clear:
+  - Empties `squares`.
+  - Removes all `.square` elements from the DOM.
+  - Resets selection and drag state.
+  - Hides the data popup and bounding box.
+  - Calls `updateStats()`.
+
+### Updating squares and classes
+
+- `updateSquare(id, updates)`  
+  - Merges `updates` into the square with given id.
+  - Re-applies DOM position and rotation.
+  - Refreshes classes, data popup, and stats.
+
+- `updateAllSquareClasses()`  
+  - Recomputes the CSS classes for each square based on:
+    - Its `mode` (`move` vs `rotate`).
+    - Whether it is selected (`selectedSquareId`).
+    - Whether some other square is being dragged (adds `not-selected` for context).
+
+### Number formatting and coordinate helpers
+
+- `formatSquareUnit(v)`  
+  - Formats a numeric value with up to 13 decimal places, trimming trailing zeros.
+- `formatRotation(v)`  
+  - Formats rotation to 1 decimal place.
+- Pixel/center conversions:
+  - `pixelToCenterX`, `pixelToCenterY` convert `x`, `y` board pixels into square‑based center offsets (used in the data panel).
+  - `centerToPixelX`, `centerToPixelY` do the inverse.
+
+### Data panel: `applySquareDataInputs`, `setupSquareDataInputHandlers`, `updateSquareDataDisplay`
+
+The data panel is the small popup shown near the selected square with precise position and rotation inputs.
+
+- `updateSquareDataDisplay()`:
+  - If no square is selected, hides the panel.
+  - Otherwise:
+    - Renders a small form with:
+      - `x`, `y` (center offsets from global center).
+      - `rotation` (degrees).
+    - Calls `setupSquareDataInputHandlers()` to wire events.
+    - Positions the panel around the square (tries several candidate positions to avoid overlapping the board edges or other squares).
+
+- `setupSquareDataInputHandlers()`:
+  - Registers `blur` and `Enter` key handlers on the inputs to trigger `applySquareDataInputs()`.
+
+- `applySquareDataInputs()`:
+  - Parses user-entered `x`, `y`, `rotation`.
+  - Validates them; on invalid input, reverts UI and flashes an error state.
+  - Converts desired center coordinates back into board pixels.
+  - Normalizes rotation into `[0, 360)` and checks for collisions via `wouldCollide`.
+  - If valid and non-colliding, calls `updateSquare(...)` to commit the change.
+
+---
+
+## Interaction handlers
+
+These functions connect user input (pointer/mouse) to updates in the `squares` array and the DOM.
+
+### `onPointerDown(e)`
+
+Entry point for most interactions:
+
+- If the source square (`#source`) is clicked:
+  - Start a create drag:
+    - Show the ghost square.
+    - Clear selection.
+- If the main board is clicked (not on a square or popup):
+  - Clear selection.
+- If a square is clicked:
+  - Select it, update UI.
+  - If the square is in rotate mode:
+    - Start a `type: 'rotate'` drag:
+      - Record starting angle (`startAngle`) between cursor and square center.
+      - Record `startRotation`.
+  - Else:
+    - Start a `type: 'move'` drag:
+      - Record offset between cursor and square position so dragging feels natural.
+
+### `onPointerMove(e)`
+
+Updates state while dragging:
+
+- Create drag:
+  - Moves the ghost square under the cursor.
+- Move drag:
+  - Computes new candidate position.
+  - Clamps into the board.
+  - Uses `wouldCollide` to prevent overlaps; only updates if move is collision-free.
+  - Toggles the delete zone highlight when hovering over it.
+- Rotate drag:
+  - Computes the new angle between the cursor and square center.
+  - Adds the delta to the initial rotation, normalizes to `[0, 360)`.
+  - Uses `wouldCollide` to block rotations that would cause overlaps.
+
+### `onPointerUp(e)`
+
+Finalizes interactions:
+
+- Create:
+  - Hides the ghost.
+  - If the drop is inside the board viewport, calls `addSquare(...)`.
+- Move:
+  - If the square is released over the delete zone, removes it.
+  - Resets z‑index and delete zone highlight.
+- Rotate:
+  - Resets z‑index.
+- Clears `dragState` and refreshes classes.
+
+### `onDoubleClick(e)`
+
+Double‑clicking a square toggles its mode:
+
+- `'move'` → `'rotate'` → `'move'` → …
+- Visually indicated via CSS (`.mode-rotate`).
+
+---
+
+## Wiring and initialization
+
+At the bottom of `fit.js`, the event listeners are attached:
+
+- Board / camera:
+  - `boardZoomContainer.addEventListener('wheel', onWheel, { passive: false })`
+- Pointer events:
+  - `document.addEventListener('pointerdown', onPointerDown)`
+  - `document.addEventListener('pointermove', onPointerMove)`
+  - `document.addEventListener('pointerup', onPointerUp)`
+  - `board.addEventListener('dblclick', onDoubleClick)`
+- Delete all:
+  - `deleteAllBtn.addEventListener('click', deleteAllSquares)`
+- Ghost drag:
+  - `document.addEventListener('dragstart', e => e.preventDefault())`
+- Initial centering:
+  - `requestAnimationFrame(() => centerViewOnGrid())`
+
+This means:
+
+- All pointer interactions are global (attached on `document`), so they work even if the pointer leaves the board while dragging.
+- The visual state of the board is always derived from `squares`, `selectedSquareId`, `dragState`, `zoom`, and `pan`.
+
+With this mental model and the function breakdown above, you should be able to:
+
+- Add new interaction modes (e.g. pinning squares).
+- Export/import layouts.
+- Extend the UI while keeping behavior consistent.
