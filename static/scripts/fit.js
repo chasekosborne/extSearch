@@ -722,6 +722,8 @@ function onPointerUp(e) {
 }
 
 function onDoubleClick(e) {
+  console.log(checkAllCollisions(squares,SQUARE_SIZE));
+
   if (dragState) return;
   
   const target = e.target.closest('.square');

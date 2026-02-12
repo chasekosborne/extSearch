@@ -10,7 +10,7 @@
     
     - Working with arrays of corners [A,B,C,D] where A-B A-D adjacent. A is [x,y] array. CONVERSIONS NEEDED
 
-    VERSION 1.0.1 
+    VERSION 1.0.2 
 */
 ///// ===========
 "use strict";
@@ -55,7 +55,7 @@ function _checkOverlap(sq1,sq2,sideLength) { // Simple vector collision check sq
     var sq2Map = sq2Copy.map(v => vecDot(bHat,v)); // UNTESTED; Gives proj_BHat(*)
     var sq2MapSpan = [Math.min(...sq2Map),Math.max(...sq2Map)]; // PROJECTION ON B Hat
     
-    if ( (0 > sq2MapSpan[1]) || (sideLength < sq2MapSpan[0]) ) { return false; } // Never overlaps, exists axis of seperation...
+    if ( (0 >= sq2MapSpan[1]) || (sideLength <= sq2MapSpan[0]) ) { return false; } // Never overlaps, exists axis of seperation...
 
     // Hardcoded 2: A-D check:
     var dVec = vecSub(dPos,aPos);
@@ -64,11 +64,29 @@ function _checkOverlap(sq1,sq2,sideLength) { // Simple vector collision check sq
     sq2Map = sq2Copy.map(v => vecDot(dHat,v));
     sq2MapSpan = [Math.min(...sq2Map),Math.max(...sq2Map)]
 
-    if ( (0 > sq2MapSpan[1]) || (sideLength < sq2MapSpan[0]) ) { return false; } 
+    if ( (0 >= sq2MapSpan[1]) || (sideLength <= sq2MapSpan[0]) ) { return false; } 
 
     return true;
 }
 
 function checkCollides(sq1,sq2,sideLength) {
     return (_checkOverlap(sq1,sq2,sideLength)) && (_checkOverlap(sq2,sq1,sideLength)); // Ie. if any return false :: If exists any axis of seperation
+}
+
+function checkAllCollisions(squaresList,squareSize=SQUARE_SIZE) { // Checks for any coliding squares, return list of ids?
+    const validationList = squaresList;
+    const len = validationList.length;
+
+    // console.log(validationList,len);
+
+    var collis = []
+    for (let i = 0; i < len; ++i) {
+        for (let j = i+1; j < len; ++j) {
+            if (checkCollides(convCornersToVec(getSquareCorners(validationList[i])),convCornersToVec(getSquareCorners(validationList[j])),squareSize)) {
+                collis.push([i,j]);
+            }
+        }
+    }
+
+    return [(collis.length==0 ? false: true),collis];
 }
