@@ -11,8 +11,9 @@ Login
 {% block content %}
 <div class="login-page">
     <div class="login-container">
-        <h2>Login</h2>
-
+        <h2 style="text-align:center; display: block; margin-top: 16px;" >Login</h2>
+        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+        
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
@@ -26,6 +27,15 @@ Login
 
             <button type="submit">Login</button>
         </form>
-    </div>
+        
+        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+        <div>
+            <a href="{{ url_for('guest') }}" class="top-right-btn" style="color: blue; text-align:center; display: block; margin-top: 16px;">
+                Continue as Guest
+            </a> 
+        </div>
+    </div>    
 </div>
+
+
 {% endblock %}

@@ -8,6 +8,9 @@ const statCount = document.getElementById('stat-count');
 const statBounds = document.getElementById('stat-bounds');
 const boundingBox = document.getElementById('bounding-box');
 const squareData = document.getElementById('square-data');
+const deployBtn = document.getElementById('deploy-btn');
+const card = document.getElementById('bounds-card');
+
 
 const SQUARE_SIZE = 56;
 const BOARD_SIZE = 10000;
@@ -92,46 +95,44 @@ function getRotatedSquareBounds(sq) {
 }
 
 function updateStats() {
-  statCount.textContent = squares.length;
-  
-  if (squares.length === 0) {
-    statBounds.textContent = '—';
-    boundingBox.style.display = 'none';
-    return;
-  }
-  
-  let minX = Infinity, minY = Infinity;
-  let maxX = -Infinity, maxY = -Infinity;
-  
-  squares.forEach(sq => {
-    const bounds = getRotatedSquareBounds(sq);
-    minX = Math.min(minX, bounds.minX);
-    minY = Math.min(minY, bounds.minY);
-    maxX = Math.max(maxX, bounds.maxX);
-    maxY = Math.max(maxY, bounds.maxY);
-  });
-  
-  const w = (maxX - minX) / SQUARE_SIZE;
-  const h = (maxY - minY) / SQUARE_SIZE;
-  
-  // Use the largest side length to make it a square
-  const maxSide = Math.max(w, h);
-  
-  // Display with high precision (up to 3 decimal places)
-  const maxSideStr = maxSide.toFixed(13).replace(/\.?0+$/, '');
-  statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
-  
-  // Update visual bounding box as a square
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  const squareSize = maxSide * SQUARE_SIZE;
-  const halfSize = squareSize / 2;
-  
-  boundingBox.style.display = 'block';
-  boundingBox.style.left = (centerX - halfSize) + 'px';
-  boundingBox.style.top = (centerY - halfSize) + 'px';
-  boundingBox.style.width = squareSize + 'px';
-  boundingBox.style.height = squareSize + 'px';
+    statCount.textContent = squares.length;
+    if (!card) return;
+    const isExpanded = card.classList.contains('expanded');
+
+    if (squares.length === 0) {
+        statBounds.textContent = '—';
+        boundingBox.style.display = 'none';
+        return;
+    }
+    
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+    
+    squares.forEach(sq => {
+        const bounds = getRotatedSquareBounds(sq);
+        minX = Math.min(minX, bounds.minX);
+        minY = Math.min(minY, bounds.minY);
+        maxX = Math.max(maxX, bounds.maxX);
+        maxY = Math.max(maxY, bounds.maxY);
+    });
+    
+    const maxSide = Math.max((maxX - minX) / SQUARE_SIZE, (maxY - minY) / SQUARE_SIZE);
+    
+    const precision = isExpanded ? 13 : 1;
+    const maxSideStr = maxSide.toFixed(precision).replace(/\.?0+$/, '');
+    
+    statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
+    
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const squareSize = maxSide * SQUARE_SIZE;
+    const halfSize = squareSize / 2;
+    
+    boundingBox.style.display = 'block';
+    boundingBox.style.left = (centerX - halfSize) + 'px';
+    boundingBox.style.top = (centerY - halfSize) + 'px';
+    boundingBox.style.width = squareSize + 'px';
+    boundingBox.style.height = squareSize + 'px';
 }
 
 function createSquareEl(sq) {
@@ -168,6 +169,7 @@ function addSquare(x, y) {
     updateStats();
   }
 }
+
 
 function removeSquare(id) {
   squares = squares.filter(function(s) { return s.id !== id; });
@@ -388,6 +390,7 @@ function getSquareCorners(sq) {
   const sin = Math.sin(angle);
   const halfSize = SQUARE_SIZE / 2;
   
+  
   return [
     { x: centerX + (-halfSize) * cos - (-halfSize) * sin, y: centerY + (-halfSize) * sin + (-halfSize) * cos },
     { x: centerX + halfSize * cos - (-halfSize) * sin, y: centerY + halfSize * sin + (-halfSize) * cos },
@@ -395,6 +398,7 @@ function getSquareCorners(sq) {
     { x: centerX + (-halfSize) * cos - halfSize * sin, y: centerY + (-halfSize) * sin + halfSize * cos }
   ];
 }
+
 
 // Check if a point is inside a rotated square
 function pointInRotatedSquare(point, sq) {
@@ -657,13 +661,41 @@ function onWheel(e) {
   applyTransform();
 }
 
+function organizeSquareBounds(squaresCorners) {
+  let top = squaresCorners[0], right = squaresCorners[0], bottom = squaresCorners[0], left = squaresCorners[0];
+  for (let corner of squaresCorners) {
+    if (corner.y < top.y) top = corner;
+    if (corner.x > right.x) right = corner;
+    if (corner.y > bottom.y) bottom = corner;
+    if (corner.x < left.x) left = corner;
+  }
+  return { top, right, bottom, left };
+}
+
+card.addEventListener('click', function() {
+    this.classList.toggle('expanded'); 
+    updateStats(); 
+});
+
+
+deployBtn.addEventListener('click', () => {
+  const data = [];
+  for (let sq of squares) {
+    const squareCorners = getSquareCorners(sq);
+    const organizedBounds = organizeSquareBounds(squareCorners);
+    data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
+  }
+  console.log(data)
+  return data;
+});
+
+
 boardZoomContainer.addEventListener('wheel', onWheel, { passive: false });
 
 document.addEventListener('pointerdown', onPointerDown);
 document.addEventListener('pointermove', onPointerMove);
 document.addEventListener('pointerup', onPointerUp);
 board.addEventListener('dblclick', onDoubleClick);
-
 
 document.addEventListener('dragstart', function(e) { e.preventDefault(); });
 
