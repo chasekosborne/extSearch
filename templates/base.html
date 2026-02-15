@@ -1,12 +1,40 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
         <link rel="icon" type="image/png" href="static/img/Icon.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
         
+        <style>
+            .guest-dropdown { position: relative; margin-left: auto; }
+            .guest-dropdown-trigger { cursor: pointer; display: block; }
+            .guest-dropdown:hover .guest-dropdown-menu { display: block; }
+            .guest-dropdown-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-top: 0;
+                min-width: 140px;
+                background: #fff;
+                border: 1px solid #e5e5e5;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+            .guest-dropdown-menu a {
+                display: block;
+                padding: 10px 16px;
+                font-size: 14px;
+                color: #1a1a1a;
+                transition: background 0.15s;
+            }
+            .guest-dropdown-menu a:hover {
+                background: #f5f5f5;
+            }
+        </style>
         {% block link %} STYLE LINK {% endblock %}
         <title> {% block title %} HTML TITLE {% endblock %} </title>
     </head>
@@ -24,9 +52,22 @@
             </nav>
             {% endif %}
 
-            <a href="{{ url_for('login') }}" class="top-right-btn">
-                <button class="top-right-btn">Login</button>
-            </a>
+            {% if current_user_id %}
+            <div class="guest-dropdown">
+                <span class="guest-dropdown-trigger top-right-btn">
+                    {{ current_username or 'Guest' }}
+                </span>
+                <div class="guest-dropdown-menu">
+                    {% if not is_guest %}
+                    <a href="{{ url_for('submissions') }}">My Submissions</a>
+                    <a href="{{ url_for('account_settings') }}">Account Settings</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}">Log out</a>
+                </div>
+            </div>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="top-right-btn">Login</a>
+            {% endif %}
 
         </header>
 

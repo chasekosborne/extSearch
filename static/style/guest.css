@@ -460,6 +460,10 @@ a {
     margin-bottom: 24px;
 }
 
+.guest-card form {
+    margin: 0;
+}
+
 .guest-enter-btn {
     display: inline-block;
     padding: 12px 18px;
@@ -467,6 +471,9 @@ a {
     background: #5599ff;
     color: white;
     font-weight: 500;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
     transition: background 0.2s;
 }
 

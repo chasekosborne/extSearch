@@ -1,14 +1,23 @@
 ## Overview
 
-The Fit game UI is implemented in `static/scripts/fit.js`.  
-It is a plain JavaScript file (no frameworks) that:
+The Fit game UI is implemented as several plain JavaScript files under `static/scripts/` (no frameworks):
+
+- `fit-constants.js` – DOM refs, constants, shared state, snap-to-grid
+- `fit-geometry.js` – bounds, collision, coordinate/format helpers
+- `fit-transform.js` – pan/zoom and `applyTransform()`
+- `fit-squares.js` – square CRUD, stats, clear modal, submission loading
+- `fit-square-data.js` – selection editor (position/rotation inputs)
+- `fit-input.js` – pointer/drag handlers and event bindings
+- `fit-main.js` – URL load param and initial view
+
+Together they:
 
 - Maintains an in‑memory model of all squares on the board.
 - Projects that model onto the DOM (creating and updating `.square` elements).
 - Computes geometry (bounding square side length, collision detection).
 - Prepares data to be sent to the backend for scoring / storage.
 
-This page documents the main concepts and functions in `fit.js` so you can safely extend or reuse it.
+This page documents the main concepts and functions across these scripts so you can safely extend or reuse them.
 
 ---
 
@@ -141,6 +150,44 @@ These implement rotated-square collision detection:
   - Returns `true` if `testSq` intersects any existing square except `excludeId`.
   - Used before moving/rotating/creating squares to enforce non-overlap.
 
+### Clear confirmation modal
+
+The “Clear” control opens an in-page overlay (defined in the Fit template) instead of clearing immediately:
+
+- **Elements:** `#clear-confirm-overlay`, `#clear-confirm-cancel`, `#clear-confirm-ok`.
+- **`closeClearConfirmModal()`**  
+  Hides the overlay by setting `clearConfirmOverlay.setAttribute('hidden', '')`.
+- **Event wiring:**
+  - Cancel button and overlay backdrop click call `closeClearConfirmModal()`.
+  - “Clear all” button calls `closeClearConfirmModal()` then `performClearBoard()`.
+  - A global `keydown` listener closes the modal on Escape when the overlay is visible.
+
+---
+
+### Loading a submission from the URL
+
+The Fit page can open with a solution pre-loaded from the Explore Solutions “View in Fit” flow.
+
+- **`apiSquareToFit(apiSq)`**  
+  Converts one API square `{ cx, cy, ux, uy }` (center and unit vector to top-right) into Fit’s format:
+  - `x = cx - SQUARE_SIZE/2`, `y = cy - SQUARE_SIZE/2` (top-left in board pixels).
+  - `rotation` from `(ux, uy)`: `atan2(uy, ux) * 180/π + 45`, normalized to `[0, 360)` degrees.
+
+- **`loadSubmissionIntoBoard(submissionId)`**  
+  Fetches `GET /api/submission/<id>/squares`, then:
+  1. Clears the board with `deleteAllSquares(true)` (no confirmation).
+  2. For each returned square, converts via `apiSquareToFit`, creates a Fit square (with new `id`), pushes into `squares` and appends the DOM node (no collision checks).
+  3. Updates selection, classes, stats.
+  4. If there are squares, centers the view on their bounding box; otherwise calls `centerViewOnGrid()`.
+  5. Does not change the URL; that is done by the init logic below.
+
+- **URL parameter `load`**  
+  On initial run, the script checks for a query parameter `load=<submission_id>`:
+  - If present, sets a flag `loadedFromUrl`, calls `loadSubmissionIntoBoard(loadId)`, then removes the `load` parameter with `history.replaceState` so reloading the page does not re-load the same submission.
+  - The initial `requestAnimationFrame` call runs `centerViewOnGrid()` only when `!loadedFromUrl`, so the view stays centered on the loaded solution when opening from Explore.
+
+---
+
 ### `organizeSquareBounds(squaresCorners)` and deploy button
 
 Utility for exporting square bounds:
@@ -176,13 +223,19 @@ Utility for exporting square bounds:
   - Clears selection if it was selected.
   - Updates classes + stats.
 
-- `deleteAllSquares()`  
-  Bulk-clear:
-  - Empties `squares`.
-  - Removes all `.square` elements from the DOM.
-  - Resets selection and drag state.
-  - Hides the data popup and bounding box.
-  - Calls `updateStats()`.
+- `performClearBoard()`  
+  Performs the actual bulk-clear (no UI):
+  - Empties `squares`, removes all `.square` DOM elements.
+  - Resets selection and drag state, hides the data popup and bounding box, calls `updateStats()`.
+  - Used both when the user confirms clear in the modal and when loading a submission (clear-before-load).
+
+- `deleteAllSquares(skipConfirm)`  
+  Bulk-clear with optional confirmation:
+  - If there are no squares, returns immediately.
+  - If `skipConfirm` is truthy (e.g. when loading a submission), calls `performClearBoard()` and returns.
+  - Otherwise shows the clear-confirmation overlay (`#clear-confirm-overlay`). The user can Cancel (or click backdrop / press Escape) to close it, or confirm “Clear all” to run `performClearBoard()` and close the overlay.
+  - The Clear toolbar button calls `deleteAllSquares()` with no arguments (so confirmation is shown when there are squares).
+  - Visibility of the overlay is controlled via the `hidden` attribute (`removeAttribute('hidden')` to show, `setAttribute('hidden', '')` to hide).
 
 ### Updating squares and classes
 
@@ -297,7 +350,7 @@ Double‑clicking a square toggles its mode:
 
 ## Wiring and initialization
 
-At the bottom of `fit.js`, the event listeners are attached:
+Event listeners and initialization live in `fit-input.js` (pointer, wheel, delete-all, submit, bounds card) and `fit-main.js` (URL load param, initial view). In summary:
 
 - Board / camera:
   - `boardZoomContainer.addEventListener('wheel', onWheel, { passive: false })`
@@ -307,11 +360,13 @@ At the bottom of `fit.js`, the event listeners are attached:
   - `document.addEventListener('pointerup', onPointerUp)`
   - `board.addEventListener('dblclick', onDoubleClick)`
 - Delete all:
-  - `deleteAllBtn.addEventListener('click', deleteAllSquares)`
+  - `deleteAllBtn.addEventListener('click', …)` calls `e.preventDefault()`, `e.stopPropagation()`, then `deleteAllSquares()`, so the confirmation overlay is shown when there are squares.
+- Load from URL:
+  - A small IIFE runs at load time: if `?load=<id>` is in the URL, it calls `loadSubmissionIntoBoard(loadId)` and then strips the `load` query param via `history.replaceState`.
 - Ghost drag:
   - `document.addEventListener('dragstart', e => e.preventDefault())`
 - Initial centering:
-  - `requestAnimationFrame(() => centerViewOnGrid())`
+  - `requestAnimationFrame(…)` calls `centerViewOnGrid()` only when not loading from URL (`!loadedFromUrl`), then `updateSubmitButtonState()`.
 
 This means:
 
