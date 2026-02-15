@@ -18,7 +18,7 @@ Login
             <p class="error">{{ error }}</p>
         {% endif %}
 
-        <form method="POST" class="login-form">
+        <form method="POST" class="login-form" action="{{ url_for('login') }}">
             <label for="username">Username</label>
             <input type="text" name="username" required>
 
@@ -29,13 +29,10 @@ Login
         </form>
         
         <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
-        <div>
-            <a href="{{ url_for('guest') }}" class="top-right-btn" style="color: blue; text-align:center; display: block; margin-top: 16px;">
-                Continue as Guest
-            </a> 
-        </div>
-    </div>    
+        <p style="text-align: center; color: #71717a; font-size: 14px;">
+            Don't have an account? <a href="{{ url_for('register') }}" style="color: #5599ff;">Create one</a>
+        </p>
+    </div>
 </div>
-
 
 {% endblock %}

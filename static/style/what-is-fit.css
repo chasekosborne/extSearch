@@ -104,3 +104,21 @@ h1 {
   border-radius: 6px;
   cursor: pointer;
 }
+
+.back-button {
+  margin-top: 32px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+  background: #f5f5f5;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.back-button:hover {
+  background: #ececec;
+  border-color: #d4d4d4;
+}

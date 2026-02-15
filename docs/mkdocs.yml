@@ -2,7 +2,7 @@ site_name: extSearch Docs
 nav:
   - Home : index.md
 
-theme: readthedocs
+theme: material
 
 # Favicon for the docs site. Make sure docs/docs/img/Icon.png exists.
 site_favicon: img/Icon.png

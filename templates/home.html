@@ -16,28 +16,82 @@
     <p style="font-size: 16px; color: #71717a; margin-bottom: 16px; font-weight: 500; margin-top: 0;">Extremal Search</p>
     <p class="subtitle">
     Finding optimal solutions to hard problems.<br>
-    Explore solutions through play.
     </p>
-    <div class="cta-container">
-    <a href="fit" class="cta">
-        <img src="{{ url_for('static', filename='img/fit-icon.svg') }}" alt="Fit" style="width: 20px; height: 20px; display: block;" />
-        Play Fit
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-    </a>
-    <a href="fit-api.html" class="cta">
-        <img src="{{ url_for('static', filename='img/API.svg') }}" alt="API" style="width: 20px; height: 20px; display: block;" />
-        Download Fit API
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-    </a>
-    </div>
-    <p style="margin-top: 24px;">
-    <a href="{{ url_for('what_is_fit') }}" style="color: #71717a; font-size: 14px; text-decoration: underline;">what is Fit?</a>
-    </p>
+    
+    <section class="active-problems">
+        <h2 class="section-title">Active Problems</h2>
+        <div class="problems-grid">
+            <div class="problem-card">
+                <div class="problem-header">
+                    <img src="{{ url_for('static', filename='img/fit-icon.svg') }}" alt="Fit" class="problem-icon" />
+                    <div class="problem-title-group">
+                        <h3 class="problem-title">Fit</h3>
+                        <p class="problem-description">Square packing with rotation</p>
+                    </div>
+                </div>
+                <div class="problem-actions">
+                    <a href="{{ url_for('fit') }}" class="problem-action primary">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Play Fit
+                    </a>
+                    <button type="button" class="problem-action secondary fit-api-btn coming-soon" id="fit-api-trigger" title="Fit API not yet available">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download API
+                    </button>
+                    <a href="{{ url_for('explore_solutions') }}" class="problem-action secondary full-width">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Explore Solutions
+                    </a>
+                </div>
+                <a href="{{ url_for('what_is_fit') }}" class="problem-link">Learn more about Fit →</a>
+            </div>
+        </div>
+    </section>
 </main>
 
+<!-- Fit API not available popup -->
+<div class="home-modal-overlay" id="fit-api-overlay" role="dialog" aria-modal="true" aria-labelledby="fit-api-modal-title" hidden>
+    <div class="home-modal">
+        <h2 class="home-modal-title" id="fit-api-modal-title">Fit API</h2>
+        <p class="home-modal-text">The Fit API is not yet available. Please check back later.</p>
+        <div class="home-modal-actions">
+            <button type="button" class="home-modal-btn home-modal-btn-primary" id="fit-api-overlay-ok">OK</button>
+        </div>
+    </div>
+</div>
 
-{%endblock %}
+{% endblock %}
+{% block script %}
+<script>
+(function () {
+    var overlay = document.getElementById('fit-api-overlay');
+    var trigger = document.getElementById('fit-api-trigger');
+    var okBtn = document.getElementById('fit-api-overlay-ok');
+    if (!overlay || !trigger) return;
+    function openModal() {
+        overlay.removeAttribute('hidden');
+    }
+    function closeModal() {
+        overlay.setAttribute('hidden', '');
+    }
+    trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        openModal();
+    });
+    okBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) closeModal();
+    });
+})();
+</script>
+{% endblock %}

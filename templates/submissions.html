@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/submissions.css') }}">
+{% endblock %}
+
+{% block title %}My Submissions — extSearch{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-header">
+        <h1>My Submissions</h1>
+        {% if total > 0 %}
+        <span class="total-count">{{ total }} total</span>
+        {% endif %}
+    </div>
+    
+    {% if submissions %}
+    <table class="submissions-table">
+        <thead>
+            <tr>
+                <th class="col-id">#</th>
+                <th class="col-problem">Problem</th>
+                <th class="col-squares">Squares</th>
+                <th class="col-status">Status</th>
+                <th class="col-date">Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in submissions %}
+            <tr>
+                <td class="col-id mono">{{ sub.id }}</td>
+                <td class="col-problem">
+                    {%- if sub.domain == 'square_packing_rotatable' -%}
+                        Fit
+                    {%- else -%}
+                        {{ sub.domain }}
+                    {%- endif -%}
+                </td>
+                <td class="col-squares mono">{{ sub.square_count }}</td>
+                <td class="col-status">
+                    <span class="status-dot status-{{ sub.status }}"></span>
+                    {{ sub.status.title() }}
+                </td>
+                <td class="col-date">{{ sub.created_at.strftime('%Y-%m-%d %H:%M') if sub.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <nav class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('submissions', page=page-1) }}" class="page-btn">← Prev</a>
+        {% else %}
+        <span class="page-btn disabled">← Prev</span>
+        {% endif %}
+
+        <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('submissions', page=page+1) }}" class="page-btn">Next →</a>
+        {% else %}
+        <span class="page-btn disabled">Next →</span>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <p>You haven't submitted any solutions yet.</p>
+        <a href="{{ url_for('fit') }}" class="cta-link">Start playing Fit →</a>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}

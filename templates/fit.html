@@ -6,54 +6,102 @@ Fit
 
 
 {% block link %}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/fit-icon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/fit.css') }}">
 {% endblock %}
 
 
 {% block content %}
 <div class="game-container">
-<!-- Left Panel -->
-<aside class="panel-left">
-    <div class="panel-section">
-    <div class="source-square" id="source">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-    </div>
-    </div>
-    
-    <div class="panel-section">
-        <div class="stats">
-            <div class="stat-row">
-                <span class="stat-label">Squares</span>
-                <span id="stat-count">0</span>
+<!-- Selected square editor: above toolbar on desktop, below toolbar on small screens -->
+<section class="selection-editor" id="selection-editor" aria-label="Selected square properties">
+    <div class="square-data" id="square-data"></div>
+</section>
+
+<!-- Bottom toolbar -->
+<aside class="bottom-bar" role="toolbar" aria-label="Fit game controls">
+    <div class="bottom-bar-inner">
+        <div class="bar-group bar-group-add">
+            <span class="bar-group-label" aria-hidden="true">Add</span>
+            <div class="source-square" id="source" title="Drag to board to add a square">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
             </div>
+        </div>
 
-            <div class="stat-row; stat-row vertical">
-                <span class="stat-label">Bounds</span>
+        <div class="bar-sep" aria-hidden="true"></div>
 
-                <button class="stat-value expanded" id="bounds-card" aria-expanded="true">
-                    <span id="stat-bounds">—</span>
-                </button>
+        <div class="bar-group bar-group-stats">
+            <span class="bar-group-label" aria-hidden="true">Stats</span>
+            <div class="stats">
+                <div class="stat-row">
+                    <span class="stat-label">Squares</span>
+                    <span id="stat-count">0</span>
+                </div>
+                <div class="stat-row stat-row-vertical">
+                    <span class="stat-label">Bounds</span>
+                    <button type="button" class="stat-value expanded" id="bounds-card" aria-expanded="true">
+                        <span id="stat-bounds">—</span>
+                    </button>
+                </div>
             </div>
+        </div>
 
+        <div class="bar-sep" aria-hidden="true"></div>
+
+        <div class="bar-group bar-group-snap">
+            <span class="bar-group-label" aria-hidden="true">Snap</span>
+            <div class="snap-controls">
+                <div class="snap-row">
+                    <span class="snap-label">Position</span>
+                    <input type="number" id="snap-size" class="snap-size-input" value="0.1" min="0.00001" step="0.00001" title="Grid size (units), min 0.00001" aria-label="Grid size">
+                </div>
+                <div class="snap-row">
+                    <label class="snap-toggle" title="Snap rotation to angles">
+                        <input type="checkbox" id="snap-rotation-enabled" checked>
+                        <span class="snap-label">Rotation</span>
+                    </label>
+                    <input type="number" id="snap-angle-step" class="snap-size-input" value="15" min="1" max="180" step="15" title="Rotation snap step (degrees)" aria-label="Rotation snap angle">
+                </div>
+            </div>
+        </div>
+
+        <div class="bar-sep" aria-hidden="true"></div>
+
+        <div class="bar-group bar-group-actions">
+            <button type="button" class="bar-btn bar-btn-delete-all" id="delete-all" title="Delete all squares">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6v3m-7 4v6m4-6v6m5 4H7a2 2 0 01-2-2V7h14v12a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Clear</span>
+            </button>
+            <button type="button" class="bar-btn bar-btn-submit" id="submit-btn">
+                Submit
+            </button>
         </div>
     </div>
-
-    <button class = "deploy-btn" id = "deploy-btn">
-        Deploy
-    </button>
-    
 </aside>
 
 <!-- Main Board -->
 <main class="board-area">
     <div class="board-wrapper">
     <div class="board-zoom-container" id="board-zoom-container">
+        <div class="board-scale-indicator" id="board-scale-indicator" aria-hidden="true">1×</div>
         <div class="board-transform" id="board-transform">
         <div class="board" id="board">
+            <div class="board-grid-wrapper" id="board-grid-wrapper">
+            <svg class="board-grid" id="board-grid" width="10000" height="10000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <pattern id="grid-pattern" width="56" height="56" patternUnits="userSpaceOnUse">
+                        <path d="M 16 0 v 56 M 0 16 h 56" stroke="#e5e5e5" stroke-width="1" fill="none" shape-rendering="crispEdges"/>
+                    </pattern>
+                </defs>
+                <rect width="10000" height="10000" fill="url(#grid-pattern)"/>
+            </svg>
+            </div>
+            <div class="origin-marker" aria-hidden="true" title="Origin (0, 0)"></div>
             <div class="bounding-box" id="bounding-box"></div>
-            <div class="square-data" id="square-data"></div>
         </div>
         </div>
     </div>
@@ -65,15 +113,6 @@ Fit
         Drop to delete
     </div>
 
-    <!-- Button to delete all squares -->
-    <button class="delete-all-btn" id="delete-all">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M6 7h12M9 7V4h6v3m-7 4v6m4-6v6m5 4H7a2 2 0 01-2-2V7h14v12a2 2 0 01-2 2z"/>
-      </svg>
-      Delete All
-    </button>
-
     </div>
 </main>
 
@@ -81,9 +120,28 @@ Fit
 
 <!-- Ghost element for dragging -->
 <div class="ghost-square" id="ghost"></div>
+
+<!-- Clear confirmation modal -->
+<div class="fit-modal-overlay" id="clear-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="clear-confirm-title" hidden>
+    <div class="fit-modal">
+        <h2 class="fit-modal-title" id="clear-confirm-title">Clear board</h2>
+        <p class="fit-modal-text">Remove all squares from the board? This cannot be undone.</p>
+        <div class="fit-modal-actions">
+            <button type="button" class="fit-modal-btn fit-modal-btn-cancel" id="clear-confirm-cancel">Cancel</button>
+            <button type="button" class="fit-modal-btn fit-modal-btn-danger" id="clear-confirm-ok">Clear all</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block script%}
-<script src="{{ url_for('static', filename='scripts/fit.js') }}"></script>
+<script>window.FIT_OPTIMAL_N = new Set({{ optimal_n | tojson }});</script>
+<script src="{{ url_for('static', filename='scripts/fit-constants.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-geometry.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-transform.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-squares.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-square-data.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-input.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/fit-main.js') }}"></script>
 {%endblock%}
 

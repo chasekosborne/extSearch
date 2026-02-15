@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block link %}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/Icon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/explore-solutions.css') }}">
+{% endblock %}
+
+{% block title %}Explore Solutions — extSearch{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-header">
+        <h1>Explore Solutions</h1>
+        <p class="page-subtitle">Best submissions for the Fit problem by number of squares.</p>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-section">
+            <span class="filter-label filter-label-optimal">Known optimal (proved · trivial)</span>
+            <div class="filter-chips filter-chips-row"
+                 data-group="optimal"
+                 data-offset="{{ optimal_counts|length }}"
+                 data-has-more="{{ 'true' if optimal_has_more else 'false' }}"
+                 data-selected-n="{{ selected_n or '' }}">
+                {% for sc in optimal_counts %}
+                <span class="chip chip-optimal chip-no-select"
+                      title="Known optimal (proved · trivial) — no submissions to view">
+                    {{ sc.square_count }}
+                </span>
+                {% endfor %}
+                {% if optimal_has_more %}
+                <span class="chips-load-more" data-load-more>…</span>
+                {% endif %}
+                {% if not optimal_counts and not optimal_has_more %}
+                <span class="no-data">None listed yet.</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="filter-section">
+            <span class="filter-label filter-label-found">Best found (not proved)</span>
+            <div class="filter-chips filter-chips-row"
+                 data-group="found"
+                 data-offset="{{ found_counts|length }}"
+                 data-has-more="{{ 'true' if found_has_more else 'false' }}"
+                 data-selected-n="{{ selected_n or '' }}">
+                {% for sc in found_counts %}
+                <a href="{{ url_for('explore_solutions', n=sc.square_count) }}"
+                   class="chip chip-found {% if selected_n == sc.square_count %}active{% endif %}"
+                   title="Best known — optimality not proved">
+                    {{ sc.square_count }}
+                    <span class="chip-count">{{ sc.submission_count }}</span>
+                </a>
+                {% endfor %}
+                {% if found_has_more %}
+                <span class="chips-load-more" data-load-more>…</span>
+                {% endif %}
+                {% if not found_counts and not found_has_more %}
+                <span class="no-data">None in this category.</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if not optimal_counts and not found_counts and not optimal_has_more and not found_has_more %}
+        <p class="no-data">No cases loaded. Add <code>data/cases.txt</code> (format: <code>n-p</code>, <code>n-t</code>, <code>n-f</code>).</p>
+        {% endif %}
+    </div>
+
+    {% if selected_n is not none %}
+        {% if submissions %}
+        <div class="results-wrapper">
+        <div class="results-header">
+            <span class="results-label">{{ total }} submission{{ 's' if total != 1 else '' }} with {{ selected_n }} square{{ 's' if selected_n != 1 else '' }}</span>
+        </div>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th class="col-rank">#</th>
+                    <th class="col-user">User</th>
+                    <th class="col-obj"><i>s</i></th>
+                    <th class="col-status">Status</th>
+                    <th class="col-date">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr class="submission-row" data-id="{{ sub.id }}">
+                    <td class="col-rank mono">{{ (page - 1) * 50 + loop.index }}</td>
+                    <td class="col-user">{{ sub.username or sub.display_name or 'Anonymous' }}</td>
+                    <td class="col-obj mono">{% if sub.objective_value is not none %}{{ "%g"|format(sub.objective_value|round(12)) }} <span class="unit">units</span>{% else %}—{% endif %}</td>
+                    <td class="col-status">
+                        <span class="status-dot status-{{ sub.status }}"></span>
+                        {{ sub.status.title() }}
+                    </td>
+                    <td class="col-date">{{ sub.created_at.strftime('%Y-%m-%d %H:%M') if sub.created_at else '—' }}</td>
+                </tr>
+                <tr class="detail-row" id="detail-{{ sub.id }}" aria-hidden="true">
+                    <td colspan="5">
+                        <div class="detail-row-inner">
+                            <div class="detail-panel">
+                                <div class="solution-svg-container" id="canvas-{{ sub.id }}" aria-label="Solution visualization"></div>
+                                <div class="solution-actions">
+                                    <a href="{{ url_for('fit') }}?load={{ sub.id }}" class="solution-action-btn solution-action-view">View in Fit</a>
+                                    <button type="button" class="solution-download-btn" data-submission-id="{{ sub.id }}" data-n="{{ selected_n }}">Download SVG</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if total_pages > 1 %}
+        <nav class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('explore_solutions', n=selected_n, page=page-1) }}" class="page-btn">← Prev</a>
+            {% else %}
+            <span class="page-btn disabled">← Prev</span>
+            {% endif %}
+            <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+            {% if page < total_pages %}
+            <a href="{{ url_for('explore_solutions', n=selected_n, page=page+1) }}" class="page-btn">Next →</a>
+            {% else %}
+            <span class="page-btn disabled">Next →</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <p>No submissions with {{ selected_n }} squares yet.</p>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <p>Select a square count above to view the best solutions.</p>
+        </div>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block script %}
+<script>
+(function() {
+  const SQUARE_SIZE = 56;
+  const HALF = SQUARE_SIZE / 2;
+  const loaded = {};
+  const CHIP_BATCH = 50;
+
+  // Chips: single row, horizontal scroll, load more on scroll
+  document.querySelectorAll('.filter-chips-row').forEach(function(row) {
+    const group = row.dataset.group;
+    const chipClass = group === 'optimal' ? 'chip-optimal' : 'chip-found';
+    const loadMoreEl = row.querySelector('[data-load-more]');
+    let loading = false;
+
+    function getExploreUrl(n) {
+      return '/fit/explore?n=' + encodeURIComponent(n);
+    }
+    function loadMore() {
+      if (loading) return;
+      const hasMore = row.dataset.hasMore === 'true';
+      if (!hasMore) return;
+      const offset = parseInt(row.dataset.offset, 10) || 0;
+      loading = true;
+      if (loadMoreEl) loadMoreEl.textContent = 'Loading…';
+      fetch('/api/fit/explore/square-counts?group=' + encodeURIComponent(group) + '&offset=' + offset + '&limit=' + CHIP_BATCH)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          const selectedN = row.dataset.selectedN ? parseInt(row.dataset.selectedN, 10) : null;
+          const items = data.items || [];
+          items.forEach(function(sc) {
+            if (group === 'optimal') {
+              const span = document.createElement('span');
+              span.className = 'chip ' + chipClass + ' chip-no-select';
+              span.title = 'Known optimal (proved · trivial) — no submissions to view';
+              span.textContent = sc.square_count;
+              row.insertBefore(span, loadMoreEl);
+            } else {
+              const a = document.createElement('a');
+              a.href = getExploreUrl(sc.square_count);
+              a.className = 'chip ' + chipClass + (selectedN === sc.square_count ? ' active' : '');
+              a.title = 'Best known — optimality not proved';
+              a.innerHTML = sc.square_count + ' <span class="chip-count">' + sc.submission_count + '</span>';
+              row.insertBefore(a, loadMoreEl);
+            }
+          });
+          row.dataset.offset = String(offset + items.length);
+          row.dataset.hasMore = data.has_more ? 'true' : 'false';
+          if (!data.has_more && loadMoreEl) loadMoreEl.remove();
+          else if (loadMoreEl) loadMoreEl.textContent = '…';
+        })
+        .catch(function() { if (loadMoreEl) loadMoreEl.textContent = 'Error'; })
+        .finally(function() { loading = false; });
+    }
+
+    row.addEventListener('scroll', function() {
+      if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 80) loadMore();
+    });
+  });
+
+  document.querySelectorAll('.submission-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+      const id = this.dataset.id;
+      const detailRow = document.getElementById('detail-' + id);
+      if (!detailRow) return;
+
+      const isOpen = detailRow.classList.contains('open');
+      // Close all open
+      document.querySelectorAll('.detail-row').forEach(function(r) {
+        r.classList.remove('open');
+        r.setAttribute('aria-hidden', 'true');
+      });
+      document.querySelectorAll('.submission-row').forEach(function(r) {
+        r.classList.remove('active');
+      });
+
+      if (isOpen) return;
+
+      detailRow.classList.add('open');
+      detailRow.setAttribute('aria-hidden', 'false');
+      this.classList.add('active');
+
+      if (loaded[id]) {
+        renderSolution(id, loaded[id]);
+        return;
+      }
+
+      fetch('/api/submission/' + id + '/squares')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          loaded[id] = data.squares;
+          renderSolution(id, data.squares);
+        });
+    });
+  });
+
+  function renderSolution(id, squares) {
+    const container = document.getElementById('canvas-' + id);
+    if (!container) return;
+
+    // Compute corners for each square and global bounds
+    let allCorners = [];
+    const squareCorners = [];
+
+    squares.forEach(function(sq) {
+      const cx = sq.cx, cy = sq.cy;
+      const d = HALF * Math.SQRT2;
+      const corners = [
+        { x: cx + d * sq.ux,       y: cy + d * sq.uy },
+        { x: cx - d * sq.uy,       y: cy + d * sq.ux },
+        { x: cx - d * sq.ux,       y: cy - d * sq.uy },
+        { x: cx + d * sq.uy,       y: cy - d * sq.ux },
+      ];
+      squareCorners.push(corners);
+      allCorners = allCorners.concat(corners);
+    });
+
+    if (allCorners.length === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    allCorners.forEach(function(p) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    });
+
+    const bw = maxX - minX;
+    const bh = maxY - minY;
+    const bSide = Math.max(bw, bh);
+    const bCx = (minX + maxX) / 2;
+    const bCy = (minY + maxY) / 2;
+    const bx0 = bCx - bSide / 2;
+    const by0 = bCy - bSide / 2;
+
+    const padding = bSide * 0.08;
+    const totalSide = bSide + padding * 2;
+    const size = 400;
+    const scale = size / totalSide;
+
+    function tx(x) { return (x - bx0 + padding) * scale; }
+    function ty(y) { return (y - by0 + padding) * scale; }
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('xmlns', svgNS);
+    svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('class', 'solution-svg');
+
+    const bg = document.createElementNS(svgNS, 'rect');
+    bg.setAttribute('width', size);
+    bg.setAttribute('height', size);
+    bg.setAttribute('fill', '#ffffff');
+    svg.appendChild(bg);
+
+    const boxW = bSide * scale;
+    const boxX = tx(bx0);
+    const boxY = ty(by0);
+    const boundsRect = document.createElementNS(svgNS, 'rect');
+    boundsRect.setAttribute('x', boxX);
+    boundsRect.setAttribute('y', boxY);
+    boundsRect.setAttribute('width', boxW);
+    boundsRect.setAttribute('height', boxW);
+    boundsRect.setAttribute('fill', 'none');
+    boundsRect.setAttribute('stroke', '#000000');
+    boundsRect.setAttribute('stroke-width', 1);
+    svg.appendChild(boundsRect);
+
+    squareCorners.forEach(function(corners) {
+      const points = corners.map(function(p) { return tx(p.x) + ',' + ty(p.y); }).join(' ');
+      const poly = document.createElementNS(svgNS, 'polygon');
+      poly.setAttribute('points', points);
+      poly.setAttribute('fill', 'rgba(180, 180, 180, 0.55)');
+      poly.setAttribute('stroke', '#000000');
+      poly.setAttribute('stroke-width', 0.75);
+      svg.appendChild(poly);
+    });
+
+    container.textContent = '';
+    container.appendChild(svg);
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.solution-download-btn');
+    if (!btn) return;
+    const id = btn.getAttribute('data-submission-id');
+    const n = btn.getAttribute('data-n') || 'n';
+    const container = document.getElementById('canvas-' + id);
+    if (!container) return;
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    const serializer = new XMLSerializer();
+    let str = serializer.serializeToString(svg);
+    if (!str.match(/^\s*<\?xml/)) str = '<?xml version="1.0" encoding="UTF-8"?>\n' + str;
+    const blob = new Blob([str], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fit-solution-' + n + '-' + id + '.svg';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+})();
+</script>
+{% endblock %}
