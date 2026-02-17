@@ -559,76 +559,7 @@ function onPointerMove(e) {
       if (!wouldCollide(testSq, dragState.id)) {
         updateSquare(dragState.id, { x: x, y: y });
       } else { // use Separating Axis Theorem to move sqaures flush
-        let collisionSq = wouldCollideWith(testSq, dragState.id); // get square that is being collided with
-
-        // initializations
-        smallestScalar = null;
-        finalVector = {x:0.0, y:0.0};
-        separatingAxis = false;
-        testMin = null;
-        testMax = null;
-        collisionMin = null;
-        collisionMax = null;
-        unitVector = {x:0.0, y:0.0};
-        dot = 0.0;
-
-        let normals = [];
-        normals.push(testSq.rotation);
-        if (normals.indexOf(collisionSq.rotation) == -1) normals.push(collisionSq.rotation); // ifs prevents duplicate normals
-        if (normals.indexOf(testSq.rotation + 90) == -1) normals.push(testSq.rotation + 90.0);// get the degree normal of the adjacent side, only need 2 angles for each square since axis is same for opposite sides
-        if (normals.indexOf(collisionSq.rotation + 90) == -1) normals.push(collisionSq.rotation + 90.0);
-
-        testCorners = getSquareCorners(testSq);
-        collisionCorners = getSquareCorners(collisionSq);
-        
-        for (normal in normals){
-          // set up unit vector for current axis
-          unitVector.x = Math.cos(normals[normal] * (Math.PI/180));
-          unitVector.y = Math.sin(normals[normal] * (Math.PI/180));
-
-          // certain values must be reset to null and not 0, or they will affect max and min calculations
-          separatingAxis = false;
-          testMin = null;
-          testMax = null;
-          collisionMin = null;
-          collisionMax = null;
-
-          for (corner in testCorners){ // project each corner onto axis and get the min and max bounds of box on it
-            dot = dotProduct(testCorners[corner], unitVector);
-            if (dot > testMax || testMax == null) testMax = dot;
-            if (dot < testMin || testMin == null) testMin = dot;
-          }
-
-          for (corner in collisionCorners){ // ditto for the collision box
-            dot = dotProduct(collisionCorners[corner], unitVector);
-            if (dot > collisionMax || collisionMax == null) collisionMax = dot;
-            if (dot < collisionMin || collisionMin == null) collisionMin = dot;
-          }
-
-          if (!((testMin < collisionMax && testMax > collisionMax) || (testMax > collisionMin && testMin < collisionMin))){ // if not collision
-            separatingAxis = true; // there is a separating axis
-          } else { // if there is a collision -> update smallest scalar if new collision is smaller
-            if (testMin < collisionMax && testMax > collisionMax){ // check which areas caused collision
-              if ((collisionMax - testMin) < smallestScalar || smallestScalar == null){ // if distance to move is shorter than last scalar
-                // record new smallest magnitude and direction values
-                smallestScalar = (collisionMax - testMin);
-                finalVector.x = unitVector.x;
-                finalVector.y = unitVector.y;
-              }
-            }
-            if (testMax > collisionMin && testMin < collisionMin){ // check which areas caused collision
-              if ((testMax - collisionMin) < smallestScalar || smallestScalar == null){ // if distance to move is shorter than last scalar
-                // record new smallest magnitude and direction values
-                smallestScalar = (testMax - collisionMin);
-                finalVector.x = unitVector.x;
-                finalVector.y = unitVector.y;
-              }
-            }
-          }
-        }
-        if (((testSq.x < collisionSq.x) && (finalVector.x > 0)) || ((testSq.x > collisionSq.x) && (finalVector.x < 0))) finalVector.x = finalVector.x * -1; // flip x direction if vector in wrong direction
-        if (((testSq.y < collisionSq.y) && (finalVector.y > 0)) || ((testSq.y > collisionSq.y) && (finalVector.y < 0))) finalVector.y = finalVector.y * -1; // ditto for y
-        updateSquare(dragState.id, {x: x + (smallestScalar * finalVector.x), y: y + (smallestScalar * finalVector.y)}); // update with square moved in the vector direction for scalar amount
+        flushSquares(testSq, dragState.id, x, y); 
       }
     }
     
@@ -659,6 +590,85 @@ function onPointerMove(e) {
       updateSquare(dragState.id, { rotation: newRotation });
     }
   }
+}
+
+function flushSquares(testSq, draggedID, x, y){
+    let collisionSq = wouldCollideWith(testSq, draggedID); // get square that is being collided with
+
+    //console.log(collisionSq);
+    //console.log(collisionSq.x);
+    //console.log(collisionSq.y);
+
+    // initializations
+    smallestScalar = null;
+    finalVector = {x:0.0, y:0.0};
+    separatingAxis = false;
+    testMin = null;
+    testMax = null;
+    collisionMin = null;
+    collisionMax = null;
+    unitVector = {x:0.0, y:0.0};
+    dot = 0.0;
+
+    let normals = [];
+    normals.push(testSq.rotation);
+    if (normals.indexOf(collisionSq.rotation) == -1) normals.push(collisionSq.rotation); // ifs prevents duplicate normals
+    if (normals.indexOf(testSq.rotation + 90) == -1) normals.push(testSq.rotation + 90.0);// get the degree normal of the adjacent side, only need 2 angles for each square since axis is same for opposite sides
+    if (normals.indexOf(collisionSq.rotation + 90) == -1) normals.push(collisionSq.rotation + 90.0);
+
+    testCorners = getSquareCorners(testSq);
+    collisionCorners = getSquareCorners(collisionSq);
+        
+    for (normal in normals){
+      // set up unit vector for current axis
+      unitVector.x = Math.cos(normals[normal] * (Math.PI/180));
+      unitVector.y = Math.sin(normals[normal] * (Math.PI/180));
+
+      // certain values must be reset to null and not 0, or they will affect max and min calculations
+      separatingAxis = false;
+      testMin = null;
+      testMax = null;
+      collisionMin = null;
+      collisionMax = null;
+
+      for (corner in testCorners){ // project each corner onto axis and get the min and max bounds of box on it
+        dot = dotProduct(testCorners[corner], unitVector);
+        if (dot > testMax || testMax == null) testMax = dot;
+        if (dot < testMin || testMin == null) testMin = dot;
+       }
+
+       for (corner in collisionCorners){ // ditto for the collision box
+        dot = dotProduct(collisionCorners[corner], unitVector);
+        if (dot > collisionMax || collisionMax == null) collisionMax = dot;
+        if (dot < collisionMin || collisionMin == null) collisionMin = dot;
+       }
+
+      if (!((testMin < collisionMax && testMax > collisionMax) || (testMax > collisionMin && testMin < collisionMin))){ // if not collision
+        separatingAxis = true; // there is a separating axis
+      } else { // if there is a collision -> update smallest scalar if new collision is smaller
+        if (testMin < collisionMax && testMax > collisionMax){ // check which areas caused collision
+          if ((collisionMax - testMin) < smallestScalar || smallestScalar == null){ // if distance to move is shorter than last scalar
+            // record new smallest magnitude and direction values
+            smallestScalar = (collisionMax - testMin);
+            finalVector.x = unitVector.x;
+             finalVector.y = unitVector.y;
+          }
+        }
+        if (testMax > collisionMin && testMin < collisionMin){ // check which areas caused collision
+          if ((testMax - collisionMin) < smallestScalar || smallestScalar == null){ // if distance to move is shorter than last scalar
+            // record new smallest magnitude and direction values
+            smallestScalar = (testMax - collisionMin);
+            finalVector.x = unitVector.x;
+            finalVector.y = unitVector.y;
+          }
+        }
+      }
+    }
+    if (((testSq.x < collisionSq.x) && (finalVector.x > 0)) || ((testSq.x > collisionSq.x) && (finalVector.x < 0))) finalVector.x = finalVector.x * -1; // flip x direction if vector in wrong direction
+    if (((testSq.y < collisionSq.y) && (finalVector.y > 0)) || ((testSq.y > collisionSq.y) && (finalVector.y < 0))) finalVector.y = finalVector.y * -1; // ditto for y
+    updateSquare(draggedID, {x: x + (smallestScalar * finalVector.x), y: y + (smallestScalar * finalVector.y)}); // update with square moved in the vector direction for scalar amount
+    finalSquare = squares.find(function(s) { return s.id === draggedID; });
+    if (wouldCollide(finalSquare, draggedID)) flushSquares(finalSquare, draggedID, finalSquare.x, finalSquare.y); // repeat until no collisions
 }
 
 function onPointerUp(e) {
