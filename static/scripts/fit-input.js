@@ -102,8 +102,8 @@ function onPointerMove(e) {
       if (!wouldCollide(testSq, dragState.id)) {
         updateSquare(dragState.id, { x: x, y: y });
       } else { // use Separating Axis Theorem to move sqaures flush
-        console.log("OOGA");
-        flushSquares(testSq, dragState.id, x, y); 
+        updateSq = flushSquares(testSq, dragState.id);
+        updateSquare(dragState.id, { x: updateSq.x, y: updateSq.y });
       }
     }
 
@@ -137,14 +137,25 @@ function onPointerMove(e) {
   }
 }
 
-function flushSquares(testSq, draggedID, x, y){
+function flushSquares(testSq, draggedID, fallbackSq = { x: 0, y: 0 }, arrayID = new Array()){
     let collisionSq = wouldCollideWith(testSq, draggedID); // get square that is being collided with
 
-    //console.log(collisionSq);
-    //console.log(collisionSq.x);
-    //console.log(collisionSq.y);
+    tempSq = squares.find(function(s) { return s.id === dragState.id; });
+    fallbackSq.x = tempSq.x;
+    fallbackSq.y = tempSq.y;
+
+    if (arrayID.indexOf(collisionSq.id) != -1){ // if square has already been collided with and moved away from before
+      return fallbackSq; // cancel flush movement
+    }
+
+    if (testSq.x == collisionSq.x && testSq.y == collisionSq.y){ // if in the exact middle of colliding square
+      return fallbackSq // cancel flush movement
+    }
 
     // initializations
+    x = testSq.x;
+    y = testSq.y;
+    arrayID.push(collisionSq.id);
     smallestScalar = null;
     finalVector = {x:0.0, y:0.0};
     separatingAxis = false;
@@ -211,9 +222,15 @@ function flushSquares(testSq, draggedID, x, y){
     }
     if (((testSq.x < collisionSq.x) && (finalVector.x > 0)) || ((testSq.x > collisionSq.x) && (finalVector.x < 0))) finalVector.x = finalVector.x * -1; // flip x direction if vector in wrong direction
     if (((testSq.y < collisionSq.y) && (finalVector.y > 0)) || ((testSq.y > collisionSq.y) && (finalVector.y < 0))) finalVector.y = finalVector.y * -1; // ditto for y
-    updateSquare(draggedID, {x: x + (smallestScalar * finalVector.x), y: y + (smallestScalar * finalVector.y)}); // update with square moved in the vector direction for scalar amount
-    finalSquare = squares.find(function(s) { return s.id === draggedID; });
-    if (wouldCollide(finalSquare, draggedID)) flushSquares(finalSquare, draggedID, finalSquare.x, finalSquare.y); // repeat until no collisions
+    //updateSquare(draggedID, {x: x + (smallestScalar * finalVector.x), y: y + (smallestScalar * finalVector.y)}); // update with square moved in the vector direction for scalar amount
+    finalSq = testSq;
+    finalSq.x = x + (smallestScalar * finalVector.x);
+    finalSq.y = y + (smallestScalar * finalVector.y);
+    finalSq.rotation = testSq.rotation;
+    //finalSq = squares.find(function(s) { return s.id === draggedID; });
+    if (wouldCollide(finalSq, draggedID)) flushSquares(finalSq, draggedID, fallbackSq, arrayID); // repeat until no collisions
+    else return finalSq;
+    return fallbackSq;
 }
 
 // Get the square that it would collide with
