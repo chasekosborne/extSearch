@@ -678,29 +678,15 @@ card.addEventListener('click', function() {
 });
 
 
-deployBtn.addEventListener('click', async () => {
+deployBtn.addEventListener('click', () => {
   const data = [];
   for (let sq of squares) {
     const squareCorners = getSquareCorners(sq);
     const organizedBounds = organizeSquareBounds(squareCorners);
     data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
   }
-  
-  try {
-    const response = await fetch("http://127.0.0.1:5001/send-data",{
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json' 
-      },
-      body : JSON.stringify(data),
-    })
-
-    result = await response.text();
-    console.log(result)
-  }catch(error){
-    console.log("Error Submitting",error)
-  }
-
+  console.log(data)
+  return data;
 });
 
 
