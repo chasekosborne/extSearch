@@ -678,15 +678,30 @@ card.addEventListener('click', function() {
 });
 
 
-deployBtn.addEventListener('click', () => {
+deployBtn.addEventListener('click', async () => {
   const data = [];
   for (let sq of squares) {
     const squareCorners = getSquareCorners(sq);
     const organizedBounds = organizeSquareBounds(squareCorners);
     data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
   }
-  console.log(data)
-  return data;
+
+  console.log('Sending data to engine:', data);
+  
+  try {
+    const response = await fetch('http://127.0.0.1:5001/send-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+  } catch (error) {
+    console.error('Fetch completely failed:', error.message);
+  }
 });
 
 

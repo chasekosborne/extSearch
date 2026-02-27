@@ -10,8 +10,8 @@ CORS(app)
 @app.route('/send-data', methods=['POST'])
 def receive_data():
     data = request.json
-    server.validate(data)
-    return "Server received data", 200
+    server.checkAuth(True,data)
+    return "Valid",200
 
 
 if __name__ == '__main__':

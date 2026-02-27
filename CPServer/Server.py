@@ -6,8 +6,9 @@ class ServerParent:
     def __init__(self, **kwargs):
         pass
 
-    def checkAuth(baseClass,auth,data):
-        print(auth,data)
+    def checkAuth(self,auth,data):
+        if(auth):
+            self.validate(data)
 
     def toCallChild(self):
         print("Called Parent")
@@ -35,9 +36,7 @@ class CPServer(ServerParent):
             return None 
 
     def validate(self,data):
-        super().checkAuth(CPServer,"auth",data)
-
-
+        print("Validating data...")
         # data = self.pop()
         # for box in data:
         #     pass
