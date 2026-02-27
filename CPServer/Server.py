@@ -1,49 +1,69 @@
 import asyncio
 from collections import deque
+from Utilities import checkAllCollisions,checkBounds
 
-
-class ServerParent:
-    def __init__(self, **kwargs):
+class ServerParent():
+    def checkAuth(self, auth, data):
         pass
 
-    def checkAuth(self,auth,data):
-        if(auth):
-            self.validate(data)
+    def push(self, data):
+        pass
 
-    def toCallChild(self):
-        print("Called Parent")
+    def pop(self):
+        pass
 
-    def parentCall(self,called):
-        print("Primay call...")
-        
-        super(called,self).toCallChild()
+    def process_next(self):
+        pass
 
+    def validate(self, data):
+        pass
 
 
 class CPServer(ServerParent):
     def __init__(self):
-        super().__init__()
         self.submissionQueue = deque()
-    
-    def push(self,data):
+
+    def checkAuth(self, auth, data):
+        if auth:
+            print("Auth successful. Adding to queue.")
+            self.push(data)
+            return True
+        else:
+            print("Auth failed. Dropping data.")
+            return False
+
+    def push(self, data):
         self.submissionQueue.append(data)
-        self.validate()
 
     def pop(self):
         if self.submissionQueue:
             return self.submissionQueue.popleft() 
-        else:
-            return None 
+        return None 
 
-    def validate(self,data):
-        print("Validating data...")
-        # data = self.pop()
-        # for box in data:
-        #     pass
-        #     ## LOGIC TO CHECK IT IN BOUND AND SQUARES NOT OVERLAPPING
-    
+    def process_next(self):
+        data = self.pop()
+        if data:
+            self.validate(data) 
 
+    def validate(self, data):
+        if data:
+            squareSize = data[0]['square_size']
+            Collision = (checkAllCollisions(data, squareSize)[0])
+            if Collision:
+                print("Invalid Data")
+                return;
+            
+            print(checkBounds(data)) ## Square Bounds
 
+            ## Check if all squareSize the same???
+            ## MUST CHANGE DATA BEFORE SEENDING TO DB, 
+            ## Send Data to DataBase??
 
-    
-server = CPServer()
+            # deployBtn.addEventListener('click', async () => {
+            # const data = [];
+            # for (let sq of squares) {
+            #     const squareCorners = getSquareCorners(sq);
+            #     const organizedBounds = organizeSquareBounds(squareCorners);
+            #     data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
+            # }
+

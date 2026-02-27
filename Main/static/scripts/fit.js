@@ -156,7 +156,8 @@ function addSquare(x, y) {
     x: Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE)),
     y: Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE)),
     rotation: 0,
-    mode: 'move'
+    mode: 'move',
+    square_size: SQUARE_SIZE,
   };
   
   // Check for collisions before adding
@@ -726,7 +727,7 @@ function onPointerUp(e) {
 }
 
 function onDoubleClick(e) {
-  console.log(checkAllCollisions(squares,SQUARE_SIZE));
+  console.log(checkAllCollisions(squares,SQUARE_SIZE),"checking collisions");
 
   if (dragState) return;
   
@@ -775,20 +776,11 @@ card.addEventListener('click', function() {
 
 
 deployBtn.addEventListener('click', async () => {
-  const data = [];
-  for (let sq of squares) {
-    const squareCorners = getSquareCorners(sq);
-    const organizedBounds = organizeSquareBounds(squareCorners);
-    data.push([organizedBounds.top,organizedBounds.right,organizedBounds.bottom,organizedBounds.left]);
-  }
-
-  console.log('Sending data to engine:', data);
-  
   try {
     const response = await fetch('http://127.0.0.1:5001/send-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(squares)
     });
 
     if (!response.ok) {
