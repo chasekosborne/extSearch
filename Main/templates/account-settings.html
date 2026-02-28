@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/account-settings.css') }}">
+{% endblock %}
+
+{% block title %}Account Settings — extSearch{% endblock %}
+
+{% block content %}
+<main class="page">
+    <h1>Account Settings</h1>
+    
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+    
+    {% if success %}
+    <div class="alert alert-success">
+        {{ success }}
+    </div>
+    {% endif %}
+    
+    <div class="settings-sections">
+        <section class="settings-section">
+            <h2>Account Information</h2>
+            <div class="info-item">
+                <span class="info-label">Username:</span>
+                <span class="info-value">{{ user.username or 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ user.email or 'Not set' }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Member since:</span>
+                <span class="info-value">
+                    {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Unknown' }}
+                </span>
+            </div>
+        </section>
+        
+        <section class="settings-section">
+            <h2>Update Email</h2>
+            <form method="POST" class="settings-form">
+                <input type="hidden" name="action" value="update_email">
+                <div class="form-group">
+                    <label for="email">New Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        value="{{ user.email or '' }}" 
+                        required
+                        placeholder="your.email@example.com"
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary">Update Email</button>
+            </form>
+        </section>
+        
+        <section class="settings-section">
+            <h2>Change Password</h2>
+            <form method="POST" class="settings-form">
+                <input type="hidden" name="action" value="update_password">
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input 
+                        type="password" 
+                        id="current_password" 
+                        name="current_password" 
+                        required
+                        placeholder="Enter current password"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input 
+                        type="password" 
+                        id="new_password" 
+                        name="new_password" 
+                        required
+                        minlength="8"
+                        placeholder="At least 8 characters"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input 
+                        type="password" 
+                        id="confirm_password" 
+                        name="confirm_password" 
+                        required
+                        minlength="8"
+                        placeholder="Re-enter new password"
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary">Change Password</button>
+            </form>
+        </section>
+    </div>
+</main>
+{% endblock %}

@@ -15,25 +15,25 @@ a {
 }
 
 .header {
-  padding: 16px 24px;
+  padding: 20px 28px;
   border-bottom: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 36px;
 }
 
 .header .logo {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: #1a1a1a;
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .header .logo img {
-  height: 24px;
+  height: 40px;
   display: block;
 }
 
@@ -103,4 +103,22 @@ h1 {
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.back-button {
+  margin-top: 32px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+  background: #f5f5f5;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.back-button:hover {
+  background: #ececec;
+  border-color: #d4d4d4;
 }

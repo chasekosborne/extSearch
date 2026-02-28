@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}
+Create Account
+{% endblock %}
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/login.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-container">
+        <h2 style="text-align:center; display: block; margin-top: 16px;">Create Account</h2>
+        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" class="login-form" action="{{ url_for('register') }}">
+            <label for="username">Username</label>
+            <input type="text" name="username" id="username" required autocomplete="username"
+                   minlength="2" maxlength="64" pattern="[a-zA-Z0-9_-]+"
+                   title="Letters, numbers, underscores, hyphens only">
+
+            <label for="email">Email</label>
+            <input type="email" name="email" id="email" required autocomplete="email">
+
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required autocomplete="new-password"
+                   minlength="8" title="At least 8 characters">
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+        <p style="text-align: center; color: #71717a; font-size: 14px;">
+            Already have an account? <a href="{{ url_for('login') }}" style="color: #5599ff;">Log in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

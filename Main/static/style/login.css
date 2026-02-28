@@ -40,6 +40,12 @@ body {
     margin-bottom: 25px;
 }
 
+.error {
+    color: #dc2626;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
 /* Inputs */
 .login-form input {
     padding: 12px;
@@ -79,11 +85,11 @@ a {
 
 /* Header */
 .header {
-  padding: 16px 24px;
+  padding: 20px 28px;
   border-bottom: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 36px;
   position: fixed;
   top: 0;
   left: 0;
@@ -95,16 +101,16 @@ a {
 
 .header .logo {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: #1a1a1a;
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .header .logo img {
-  height: 24px;
+  height: 40px;
   display: block;
 }
 
@@ -164,7 +170,6 @@ a {
   text-decoration: none;
   display: block;
 }
-
 
 /* Left Panel */
 .panel-left {
