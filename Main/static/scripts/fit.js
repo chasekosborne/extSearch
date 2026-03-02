@@ -8,7 +8,7 @@ const statCount = document.getElementById('stat-count');
 const statBounds = document.getElementById('stat-bounds');
 const boundingBox = document.getElementById('bounding-box');
 const squareData = document.getElementById('square-data');
-const deployBtn = document.getElementById('deploy-btn');
+const deployBtn = document.getElementById('submit-btn');
 const card = document.getElementById('bounds-card');
 
 
