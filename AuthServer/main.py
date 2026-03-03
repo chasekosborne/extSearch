@@ -8,7 +8,9 @@
 ##### ===========
 # from Crypto.PublicKey import ECC # Recommended as smaller,faster ops
 from cryptography.hazmat.primitives.asymmetric import rsa # RSA used for pub/priv keys
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import serialization # export
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 
 class Authent:
     config = {
@@ -26,7 +28,6 @@ class Authent:
         except:
             print("Failed loading Pub+Priv keys.")
             self.createServerKeys()
-
     # END
 
 
@@ -34,20 +35,20 @@ class Authent:
     #### Internal
     # Key pairs - NO PASSWORD
     def createServerKeys(self): # Gen pub+priv pair
-        privKey = rsa.generate_private_key(
+        self.privKey = rsa.generate_private_key(
             public_exponent = 65537, # https://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html, https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
             key_size=4096 # MIN 2048, DEFAULT 3072, 4096 (112bit,128bit, 150bit respectively)
         )
-        pubKey = privKey.public_key()
+        self.pubKey = self.privKey.public_key()
 
         # SAVING TO DISK. DANGEROUS. NO ENCRYPTION USED.
-        pemPrivate = privKey.private_bytes(
+        pemPrivate = self.privKey.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption()
         )
 
-        pemPublic = pubKey.public_bytes(
+        pemPublic = self.pubKey.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
             # encryption_algorithm=serialization.NoEncryption() # Not needed, Public key has no encryption needs...
@@ -64,21 +65,31 @@ class Authent:
 
     def loadServerKeys(self): # Load from config
         with open(self.config["privFile"],"rb") as file:
-            privKey = serialization.load_pem_private_key(
+            self.privKey = serialization.load_pem_private_key(
                 file.read(),
                 password=None
             )
 
         with open(self.config["pubFile"],"rb") as file:
-            pubKey = serialization.load_pem_public_key(
+            self.pubKey = serialization.load_pem_public_key(
                 file.read()
             )
 
         print("Pub+Priv keys successfully loaded.") # DEBUG
     # END
 
-    def decPrivMessage(self): # Decrypt message encrypted via public
-        pass
+    def decPrivMessage(self,msg): # Decrypt message encrypted via public key
+        # ASSUME WE USE OAEP padding, PADDING VIA SHA256, MGF1 used. https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/#encryption
+        
+        return self.privKey.decrypt(
+            msg,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+    # END
     
 
 
@@ -116,7 +127,8 @@ class Authent:
 
     #### Networked
     def getServerPubKey(self): # Return SERVER public key, assumes loaded/created
-        pass
+        return self.pubKey
+    # END
 
     def signupUser(self): # SYNCHRONOUS process
         pass
@@ -131,3 +143,17 @@ class Authent:
 
 if __name__ == "__main__":
     test = Authent()
+    # print(test.privKey,test.pubKey) # NOT LOADING...
+
+    testPubKey = test.getServerPubKey()
+    testMsg = testPubKey.encrypt(
+        b"TESTED PUBLIC KEY ENC -> PRIVATE DEC",
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    print(test.decPrivMessage(testMsg))
+
+    
