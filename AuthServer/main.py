@@ -14,16 +14,13 @@ class Authent:
     config = {
         "pubFile":"./pub.pem",
         "privFile":"./priv.pem",
-        "pubKey":None,
-        "privKey":None,
     }
+    pubKey = None
+    privKey = None
 
 
 
     def __init__(self): # Internal DB init+connect, setup if necessary. Load/INIT SERVERpub+priv keys. (Allowed to 'lose' priv key). Setup for incoming connections
-        # if (self.config["pubKey"] or self.config["privKey"] is None):
-        #     self.createServerKeys()
-        #     pass
         try:
             self.loadServerKeys()
         except:
@@ -37,20 +34,20 @@ class Authent:
     #### Internal
     # Key pairs - NO PASSWORD
     def createServerKeys(self): # Gen pub+priv pair
-        self.config["privKey"] = rsa.generate_private_key(
+        privKey = rsa.generate_private_key(
             public_exponent = 65537, # https://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html, https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
             key_size=4096 # MIN 2048, DEFAULT 3072, 4096 (112bit,128bit, 150bit respectively)
         )
-        self.config["pubKey"] = self.config["privKey"].public_key()
+        pubKey = privKey.public_key()
 
         # SAVING TO DISK. DANGEROUS. NO ENCRYPTION USED.
-        pemPrivate = self.config["privKey"].private_bytes(
+        pemPrivate = privKey.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption()
         )
 
-        pemPublic = self.config["pubKey"].public_bytes(
+        pemPublic = pubKey.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
             # encryption_algorithm=serialization.NoEncryption() # Not needed, Public key has no encryption needs...
@@ -67,13 +64,13 @@ class Authent:
 
     def loadServerKeys(self): # Load from config
         with open(self.config["privFile"],"rb") as file:
-            self.config["privKey"] = serialization.load_pem_private_key(
+            privKey = serialization.load_pem_private_key(
                 file.read(),
                 password=None
             )
 
         with open(self.config["pubFile"],"rb") as file:
-            self.config["pubKey"] = serialization.load_pem_public_key(
+            pubKey = serialization.load_pem_public_key(
                 file.read()
             )
 
