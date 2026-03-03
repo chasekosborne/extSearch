@@ -6,6 +6,7 @@
 ##### ===========
 #     !!! KEYS SAVED WITH NO PASSWORD. DISK ACCESS MEANS COMPROMISED PRIVATE KEY. DO. NOT. UPLOAD. PRIVATE KEYS TO GITHUB.
 #     NOTE: key size server-side 4096, this may be too large for web clients/JS implementations... Consider reducing strength
+#     TODO: Store user key for signed validation. Sign hash of data, send hash,hashSigniture,data validate via hash + signiture.
 ##### ===========
 # from Crypto.PublicKey import ECC # Recommended as smaller,faster ops
 from cryptography.hazmat.primitives.asymmetric import rsa # RSA used for pub/priv keys
@@ -79,19 +80,6 @@ class Authent:
 
         print("Pub+Priv keys successfully loaded.") # DEBUG
     # END
-
-    def decUserMessage(self,msg): # Decrypt message encrypted via public key
-        # ASSUME WE USE OAEP padding, PADDING VIA SHA256, MGF1 used. https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/#encryption
-        
-        return self.privKey.decrypt(
-            msg,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-    # END
     
 
 
@@ -143,7 +131,8 @@ class Authent:
 
 
     
-    #### External
+    #### External operations
+    # Userkey+Msg -> USER (will decrypt)
     def encServerMessage(self,msg,usrPubKey): # Preferrably ENCRYPT->SIGN, allows validation prior to decrypt user-side
         return usrPubKey.encrypt(
             msg,
@@ -155,6 +144,7 @@ class Authent:
         )
     # END
 
+    # Msg+ServerPrivSign -> USER (will verify)
     def signServerMessage(self,msg): # Returns signiture to be passed with msg. Signing for non-critical data, Encryption->Signing for critical data (auth token passing)
         return self.privKey.sign(
             msg,
@@ -166,6 +156,39 @@ class Authent:
         )
     # END
 
+    # UserMsg+ServerPud -> SERVER (will decrypt)
+    def decUserMessage(self,msg): # Decrypt message encrypted via public key
+        # ASSUME WE USE OAEP padding, PADDING VIA SHA256, MGF1 used. https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/#encryption
+        
+        return self.privKey.decrypt(
+            msg,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+    # END
+
+    # UserMsg+SignUserPrivKey -> SERVER (will validate)
+    def verifyUserMessage(self,sig,msg,userPubKey): # Performs user verification via public key
+        try:
+            userPubKey.verify(
+                sig,
+                msg,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+
+            return True
+        except InvalidSignature as _: # Expecting if verification fails.
+            pass
+        return False
+    # END
+# END
 
 
 if __name__ == "__main__":
@@ -183,7 +206,7 @@ if __name__ == "__main__":
     )
     print(test.decUserMessage(testMsg))
 
-    # Testing signing + user-key encryption
+    # Testing signing + user-key encryption (server-signing, server-encryption, user-verification)
     userPrivKey = rsa.generate_private_key(
         public_exponent = 65537, # https://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html, https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
         key_size=4096 # MIN 2048, DEFAULT 3072, 4096 (112bit,128bit, 150bit respectively)
@@ -216,3 +239,18 @@ if __name__ == "__main__":
             label=None
         )
     ))
+
+    # Testing user-signing, server-verification
+    # userPrivKey setup earlier, not known by server.
+    msg = b"Signed user message test."
+    signiture = userPrivKey.sign(
+        msg,
+        # b"Unsigned user message",
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+
+    print(msg,test.verifyUserMessage(signiture,msg,userPrivKey.public_key()))
