@@ -1,12 +1,19 @@
+#!/usr/bin/python
 ##### Alex Tregub
 ##### 2026-03-02
 ##### Python 3.14.3
 ##### Authentication interface
 ##### ===========
+#     !!! KEYS SAVED WITH NO PASSWORD. DISK ACCESS MEANS COMPROMISED PRIVATE KEY. DO. NOT. UPLOAD. PRIVATE KEYS TO GITHUB.
+##### ===========
 # from Crypto.PublicKey import ECC # Recommended as smaller,faster ops
+from cryptography.hazmat.primitives.asymmetric import rsa # RSA used for pub/priv keys
+from cryptography.hazmat.primitives import serialization
 
 class Authent:
     config = {
+        "pubFile":"./pub.pem",
+        "privFile":"./priv.pem",
         "pubKey":None,
         "privKey":None,
     }
@@ -14,24 +21,64 @@ class Authent:
 
 
     def __init__(self): # Internal DB init+connect, setup if necessary. Load/INIT SERVERpub+priv keys. (Allowed to 'lose' priv key). Setup for incoming connections
-        if (config["pubKey"] or config["privKey"] is None):
-            # createServerKeys()
-            pass
-        
-        pass
+        # if (self.config["pubKey"] or self.config["privKey"] is None):
+        #     self.createServerKeys()
+        #     pass
+        try:
+            self.loadServerKeys()
+        except:
+            print("Failed loading Pub+Priv keys.")
+            self.createServerKeys()
+
+    # END
 
 
 
     #### Internal
-    # Key pairs
+    # Key pairs - NO PASSWORD
     def createServerKeys(self): # Gen pub+priv pair
-        # serverKey = ECC.generate(curve='p256')
-        # config["pubKey"] = serverKey.public_key()
-        # config["privKey"] = serverKey
-        pass
+        self.config["privKey"] = rsa.generate_private_key(
+            public_exponent = 65537, # https://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html, https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
+            key_size=4096 # MIN 2048, DEFAULT 3072, 4096 (112bit,128bit, 150bit respectively)
+        )
+        self.config["pubKey"] = self.config["privKey"].public_key()
 
-    def loadServerKeys(self): # Load from config?
-        pass
+        # SAVING TO DISK. DANGEROUS. NO ENCRYPTION USED.
+        pemPrivate = self.config["privKey"].private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+        pemPublic = self.config["pubKey"].public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            # encryption_algorithm=serialization.NoEncryption() # Not needed, Public key has no encryption needs...
+        )
+
+        with open(self.config["pubFile"],"wb") as file:
+            file.write(pemPublic)
+        
+        with open(self.config["privFile"],"wb") as file:
+            file.write(pemPrivate)
+
+        print("Pub+Priv keys successfully CREATED+SAVED.")
+    # END
+
+    def loadServerKeys(self): # Load from config
+        with open(self.config["privFile"],"rb") as file:
+            self.config["privKey"] = serialization.load_pem_private_key(
+                file.read(),
+                password=None
+            )
+
+        with open(self.config["pubFile"],"rb") as file:
+            self.config["pubKey"] = serialization.load_pem_public_key(
+                file.read()
+            )
+
+        print("Pub+Priv keys successfully loaded.") # DEBUG
+    # END
 
     def decPrivMessage(self): # Decrypt message encrypted via public
         pass
@@ -82,3 +129,8 @@ class Authent:
 
     def validateAuthToken(self): # ASYNC process, not necessarily called by external 
         pass
+
+
+
+if __name__ == "__main__":
+    test = Authent()
