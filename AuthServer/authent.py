@@ -6,7 +6,8 @@
 ##### ===========
 #     !!! KEYS SAVED WITH NO PASSWORD. DISK ACCESS MEANS COMPROMISED PRIVATE KEY. DO. NOT. UPLOAD. PRIVATE KEYS TO GITHUB.
 #     NOTE: key size server-side 4096, this may be too large for web clients/JS implementations... Consider reducing strength
-#     TODO: Store user key for signed validation. Sign hash of data, send hash,hashSigniture,data validate via hash + signiture.
+#     TODO: Sign hash of data, send hash,hashSigniture,data validate via hash + signiture.
+#     TODO: Use a bash variable to store pass for encryption/decryption of pub,priv keyset + VALIDATIOn of authent file before running.
 ##### ===========
 # from Crypto.PublicKey import ECC # Recommended as smaller,faster ops
 from cryptography.hazmat.primitives.asymmetric import rsa # RSA used for pub/priv keys
