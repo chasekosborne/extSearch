@@ -5,12 +5,14 @@
 ##### Authentication interface
 ##### ===========
 #     !!! KEYS SAVED WITH NO PASSWORD. DISK ACCESS MEANS COMPROMISED PRIVATE KEY. DO. NOT. UPLOAD. PRIVATE KEYS TO GITHUB.
+#     NOTE: key size server-side 4096, this may be too large for web clients/JS implementations... Consider reducing strength
 ##### ===========
 # from Crypto.PublicKey import ECC # Recommended as smaller,faster ops
 from cryptography.hazmat.primitives.asymmetric import rsa # RSA used for pub/priv keys
 from cryptography.hazmat.primitives import serialization # export
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import InvalidSignature # NEEDED FOR VERIFICATION
 
 class Authent:
     config = {
@@ -78,7 +80,7 @@ class Authent:
         print("Pub+Priv keys successfully loaded.") # DEBUG
     # END
 
-    def decPrivMessage(self,msg): # Decrypt message encrypted via public key
+    def decUserMessage(self,msg): # Decrypt message encrypted via public key
         # ASSUME WE USE OAEP padding, PADDING VIA SHA256, MGF1 used. https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/#encryption
         
         return self.privKey.decrypt(
@@ -140,6 +142,31 @@ class Authent:
         pass
 
 
+    
+    #### External
+    def encServerMessage(self,msg,usrPubKey): # Preferrably ENCRYPT->SIGN, allows validation prior to decrypt user-side
+        return usrPubKey.encrypt(
+            msg,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+    # END
+
+    def signServerMessage(self,msg): # Returns signiture to be passed with msg. Signing for non-critical data, Encryption->Signing for critical data (auth token passing)
+        return self.privKey.sign(
+            msg,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+    # END
+
+
 
 if __name__ == "__main__":
     test = Authent()
@@ -154,6 +181,38 @@ if __name__ == "__main__":
             label=None
         )
     )
-    print(test.decPrivMessage(testMsg))
+    print(test.decUserMessage(testMsg))
 
-    
+    # Testing signing + user-key encryption
+    userPrivKey = rsa.generate_private_key(
+        public_exponent = 65537, # https://www.daemonology.net/blog/2009-06-11-cryptographic-right-answers.html, https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
+        key_size=4096 # MIN 2048, DEFAULT 3072, 4096 (112bit,128bit, 150bit respectively)
+    )
+
+    encMsg = test.encServerMessage(b"TESTED USER KEY ENC + PUBLIC SERVER KEY VALIDATION",userPrivKey.public_key())
+    signitureEncMsg = test.signServerMessage(encMsg)
+
+    try:
+        testPubKey.verify( # Returns NONE if valid.
+            signitureEncMsg,
+            # testMsg,
+            encMsg,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+
+        print("VALIDATED") 
+    except InvalidSignature as e:
+        print("FAILED VALIDATION.",e)
+
+    print(userPrivKey.decrypt(
+        encMsg,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    ))
