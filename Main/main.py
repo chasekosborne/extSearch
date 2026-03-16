@@ -98,19 +98,20 @@ def explore_solutions():
     if n is not None:
         submissions_list, total = get_best_submissions(n, page=page, per_page=per_page)
         total_pages = max(1, (total + per_page - 1) // per_page)
-        html_string = response.text
-        return render_template_string(
-            html_string,
-            optimal_counts=optimal_counts[:CHIP_BATCH],
-            found_counts=found_counts[:CHIP_BATCH],
-            optimal_has_more=len(optimal_counts) > CHIP_BATCH,
-            found_has_more=len(found_counts) > CHIP_BATCH,
-            selected_n=n,
-            submissions=submissions_list,
-            page=page,
-            total_pages=total_pages,
-            total=total,
-        )
+        
+    html_string = response.text
+    return render_template_string(
+        html_string,
+        optimal_counts=optimal_counts[:CHIP_BATCH],
+        found_counts=found_counts[:CHIP_BATCH],
+        optimal_has_more=len(optimal_counts) > CHIP_BATCH,
+        found_has_more=len(found_counts) > CHIP_BATCH,
+        selected_n=n,
+        submissions=submissions_list,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+    )
 
 
 CHIP_BATCH = 50
