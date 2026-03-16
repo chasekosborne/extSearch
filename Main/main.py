@@ -1,7 +1,6 @@
-import os
+import os,requests
 from dotenv import load_dotenv
-
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for,render_template_string
 
 from db.connection import (
     create_fit_submission,
@@ -23,21 +22,45 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-in-production")
 
 
+DATAHANDLER_URL = "http://localhost:5001" 
+
 @app.route('/')
 def home():
-    return render_template('home.html')
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/home.html")
+    if response.status_code == 200:
+        html_string = response.text
+        return render_template_string(html_string) 
+    else:
+        return f"Error loading template: {response.status_code}", 500
+
 
 @app.route('/what-is-fit')
 def what_is_fit():
-    return render_template('what-is-fit.html')
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/what-is-fit.html")
+    if response.status_code == 200:
+        html_string = response.text
+        return render_template_string(html_string) 
+    else:
+        return f"Error loading template: {response.status_code}", 500
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/about.html")
+    if response.status_code == 200:
+        html_string = response.text
+        return render_template_string(html_string) 
+    else:
+        return f"Error loading template: {response.status_code}", 500
 
 @app.route('/fit')
 def fit():
-    return render_template('fit.html', optimal_n=list(get_optimal_n()))
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/fit.html")
+    if response.status_code == 200:
+        html_string = response.text
+        return render_template_string(html_string,optimal_n=list(get_optimal_n())) 
+    else:
+        return f"Error loading template: {response.status_code}", 500
+        
 
 
 @app.route('/fit/api')
@@ -47,12 +70,22 @@ def fit_api():
 
 @app.route('/solution')
 def solution():
-    return render_template('solution.html')
+    reponse = request.get(f"{DATAHANDLER_URL}/api/get-template/solution.html")
+    if response.status_code == 200:
+        html_string = response.text
+        return render_template_string(html_string)
+    else:
+         return f"Error loading template: {response.status_code}", 500
 
 
 @app.route('/fit/explore')
 def explore_solutions():
     """View the best submissions for a given number of squares."""
+
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/explore-solutions.html")
+    if response.status_code != 200:
+        return f"Error loading template: {response.status_code}", 500
+
     from_db = get_available_square_counts()
     db_by_n = {r["square_count"]: r["submission_count"] for r in from_db}
     optimal_counts, found_counts = build_explore_groups(db_by_n)
@@ -65,23 +98,22 @@ def explore_solutions():
     if n is not None:
         submissions_list, total = get_best_submissions(n, page=page, per_page=per_page)
         total_pages = max(1, (total + per_page - 1) // per_page)
-    return render_template(
-        'explore-solutions.html',
-        optimal_counts=optimal_counts[:CHIP_BATCH],
-        found_counts=found_counts[:CHIP_BATCH],
-        optimal_has_more=len(optimal_counts) > CHIP_BATCH,
-        found_has_more=len(found_counts) > CHIP_BATCH,
-        selected_n=n,
-        submissions=submissions_list,
-        page=page,
-        total_pages=total_pages,
-        total=total,
-    )
+        html_string = response.text
+        return render_template_string(
+            html_string,
+            optimal_counts=optimal_counts[:CHIP_BATCH],
+            found_counts=found_counts[:CHIP_BATCH],
+            optimal_has_more=len(optimal_counts) > CHIP_BATCH,
+            found_has_more=len(found_counts) > CHIP_BATCH,
+            selected_n=n,
+            submissions=submissions_list,
+            page=page,
+            total_pages=total_pages,
+            total=total,
+        )
 
 
 CHIP_BATCH = 50
-
-
 @app.route('/api/fit/explore/square-counts')
 def api_fit_explore_square_counts():
     """Paginated square counts for explore chips. group=optimal|found, offset=0, limit=50."""
@@ -137,24 +169,38 @@ def api_fit_submit():
         return jsonify(error=err), 422
     return jsonify(submission_id=submission_id, message='Solution submitted.')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/login.html")
+    
+    if response.status_code != 200:
+        return f"Error loading template: {response.status_code}", 500
+        
+    html_string = response.text
+
     if request.method == 'POST':
         identifier = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = verify_user(identifier, password)
+        
         if user:
             session.clear()
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['is_guest'] = False
             return redirect(url_for('fit'))
-        return render_template('login.html', error='Invalid username or password.')
-    return render_template('login.html')
+        return render_template_string(html_string, error='Invalid username or password.')
+    return render_template_string(html_string)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/register.html")
+    if response.status_code != 200:
+        return f"Error loading template: {response.status_code}", 500
+
+    html_string = response.text
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -162,7 +208,7 @@ def register():
 
         user_id, err = create_user(username, email, password)
         if err:
-            return render_template('register.html', error=err)
+            return render_template_string(html_string, error=err)
 
         session.clear()
         session['user_id'] = user_id
@@ -170,7 +216,7 @@ def register():
         session['is_guest'] = False
         return redirect(url_for('fit'))
 
-    return render_template('register.html')
+    return render_template_string(html_string)
 
 
 @app.route('/logout')
@@ -183,6 +229,13 @@ def logout():
 @app.route('/submissions')
 def submissions():
     """View user's submitted solutions. Only for registered users."""
+
+    reponse = request.get(f"{DATAHANLDER_URL}/api/get_template/submissions.html")
+    if reponse != 200:
+        return f"Error loading template: {response.status_code}", 500
+
+    html_string = reponse.text
+
     user_id = session.get('user_id')
     is_guest = session.get('is_guest', False)
     if not user_id or is_guest:
@@ -192,7 +245,7 @@ def submissions():
     submissions_list, total = get_user_submissions(user_id, page=page, per_page=per_page)
     total_pages = max(1, (total + per_page - 1) // per_page)
     return render_template(
-        'submissions.html',
+        html_string,
         submissions=submissions_list,
         page=page,
         total_pages=total_pages,
@@ -203,6 +256,14 @@ def submissions():
 @app.route('/account/settings', methods=['GET', 'POST'])
 def account_settings():
     """Edit account information (email and password). Only for registered users."""
+
+    reponse = request.get(f"{DATAHANLDER_URL}/api/get_template/account-settings.html")
+    if reponse != 200:
+        return f"Error loading template: {response.status_code}", 500
+
+    html_string = reponse.text
+
+
     user_id = session.get('user_id')
     is_guest = session.get('is_guest', False)
     if not user_id or is_guest:
@@ -241,7 +302,7 @@ def account_settings():
                 else:
                     error = err or "Failed to update password."
     
-    return render_template('account-settings.html', user=user, error=error, success=success)
+    return render_template(html_string, user=user, error=error, success=success)
 
 
 @app.context_processor
