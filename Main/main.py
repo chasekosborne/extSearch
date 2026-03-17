@@ -25,7 +25,6 @@ DATAHANDLER_URL = "http://localhost:5001"
 CHIP_BATCH = 50
 
 def get_html_template(template_name):
-    """Fetches the HTML template from the DataHandler to reduce code repetition."""
     response = requests.get(f"{DATAHANDLER_URL}/api/get-template/{template_name}")
     if response.status_code == 200:
         return response.text, None
