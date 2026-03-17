@@ -9,7 +9,13 @@ const boardTransform = document.getElementById('board-transform');
 const boardScaleIndicator = document.getElementById('board-scale-indicator');
 const source = document.getElementById('source');
 const ghost = document.getElementById('ghost');
+
+// undo, delete, redo
+const undoZone = document.getElementById('undo-zone');
 const deleteZone = document.getElementById('delete-zone');
+const redoZone = document.getElementById('redo-zone');
+// Ends here
+
 const statCount = document.getElementById('stat-count');
 const statBounds = document.getElementById('stat-bounds');
 const boundingBox = document.getElementById('bounding-box');
@@ -33,6 +39,15 @@ let idCounter = 0;
 let zoom = 1;
 let panX = 0;
 let panY = 0;
+
+// Stores the history of undo and redo
+// shared state
+let undoStack = [];
+let redoStack = [];
+history();
+
+// Var for clipboard
+let clipboard = null;
 
 /* ── Snap-to-grid ── */
 let snapGridSize = 0.1; // in unit-square multiples; min 0.00001, position snap always on
@@ -87,4 +102,23 @@ function snapRotation(deg) {
   if (!snapRotationEnabled) return deg;
   const step = snapAngleStep > 0 ? snapAngleStep : 90;
   return Math.round(deg / step) * step;
+}
+
+// Helper function that saves content
+function history() {
+  undoStack.push(JSON.stringify(squares));
+  redoStack = [];
+}
+
+//Rebuilds DOM
+function renderSquares() {
+  board.querySelectorAll('.square').forEach(el => el.remove());
+
+  squares.forEach(sq => {
+    board.appendChild(createSquareEl(sq));
+  });
+
+  updateAllSquareClasses();
+  updateSquareDataDisplay();
+  updateStats();
 }

@@ -3,10 +3,65 @@
  * Depends on: all other fit-*.js (constants, geometry, transform, squares, square-data).
  */
 
+// Undo, Delete, Redo
+function toUndoZone() {
+  if(undoStack.length === 0) {
+    console.log("Nothing to Undo");
+    return;
+  }
+
+  redoStack.push(JSON.stringify(squares));
+  squares = JSON.parse(undoStack.pop());
+  renderSquares();
+}
+
 function isInDeleteZone(clientX, clientY) {
   const rect = deleteZone.getBoundingClientRect();
   return clientX >= rect.left && clientX <= rect.right &&
          clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function toRedoZone() {
+  if(redoStack.length === 0) {
+    console.log("Nothing to Redo");
+    return;
+  }
+
+  undoStack.push(JSON.stringify(squares));
+  squares = JSON.parse(redoStack.pop());
+  renderSquares();
+}
+// Ends here
+
+// Copy + Paste
+function copySquare() {
+  if(!selectedSquareId) {
+    return;
+  }
+
+  const sq = squares.find(s => s.id === selectedSquareId);
+  if(!sq) {
+    return;
+  }
+
+  clipboard = {...sq}; //This will clone the squares
+  
+}
+
+function pasteSquare() {
+  if (!clipboard) return;
+
+  history();
+
+  const newSquare = {
+    ...clipboard,
+    id: "sq-" + (++idCounter),   // new unique ID
+    x: clipboard.x + 20,         // offset so it's not on top
+    y: clipboard.y + 20
+  };
+
+  squares.push(newSquare);
+  renderSquares();
 }
 
 function onPointerDown(e) {
@@ -41,6 +96,10 @@ function onPointerDown(e) {
     const id = target.dataset.id;
     const sq = squares.find(function(s) { return s.id === id; });
     if (!sq) return;
+
+    // Save history before move/rotate
+    undoStack.push(JSON.stringify(squares));
+    redoStack = [];
 
     // Select the square
     selectedSquareId = id;
@@ -107,11 +166,6 @@ function onPointerMove(e) {
       }
     }
 
-    if (isInDeleteZone(e.clientX, e.clientY)) {
-      deleteZone.classList.add('active');
-    } else {
-      deleteZone.classList.remove('active');
-    }
   } else if (dragState.type === 'rotate') {
     const pt = clientToBoard(e.clientX, e.clientY);
     const sq = squares.find(function(s) { return s.id === dragState.id; });
@@ -259,12 +313,15 @@ function onPointerUp(e) {
     }
   } else if (dragState.type === 'move') {
     if (isInDeleteZone(e.clientX, e.clientY)) {
+      history();
+      undoStack.push(JSON.stringify(squares));
+      redoStack.length = [];
       removeSquare(dragState.id);
     }
-
+    
     const el = board.querySelector('[data-id="' + dragState.id + '"]');
     if (el) el.style.zIndex = '';
-
+    
     deleteZone.classList.remove('active');
   } else if (dragState.type === 'rotate') {
     const el = board.querySelector('[data-id="' + dragState.id + '"]');

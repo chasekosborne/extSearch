@@ -46,18 +46,42 @@ function setupSquareDataInputHandlers() {
   const xIn = squareData.querySelector('.data-input-x');
   const yIn = squareData.querySelector('.data-input-y');
   const rotIn = squareData.querySelector('.data-input-rotation');
+
   if (!xIn || !yIn || !rotIn) return;
   function onApply() { applySquareDataInputs(); }
   function onKey(e) {
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       onApply();
     }
+    
+    // // Undo + redo shortcuts
+    // else if((e.ctrlKey || e.metaKey ) && ( e.key.toLowerCase() === "z")) {
+    //   e.preventDefault();
+    //   toUndoZone();
+    // }
+    // else if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y")) {
+    //   e.preventDefault();
+    //   toRedoZone();
+    // }
+
+    // // Copy + paste shortcuts
+    // else if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "c")) {
+    //   e.preventDefault();
+    //   copySquare();
+    // }
+    // else if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "v") && !e.repeat) {
+    //   e.preventDefault();
+    //   pasteSquare();
+    // }
   }
   [xIn, yIn, rotIn].forEach(function(inp) {
     inp.addEventListener('blur', onApply);
-    inp.addEventListener('keydown', onKey);
   });
+
+  // Made this global so ctrl can work
+  document.addEventListener('keydown', onKey);
 }
 
 function updateSquareDataDisplay() {
