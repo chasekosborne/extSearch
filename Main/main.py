@@ -1,6 +1,6 @@
-import os,requests
+import os, requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for,render_template_string
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for, render_template_string
 
 from db.connection import (
     create_fit_submission,
@@ -21,70 +21,56 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-in-production")
 
-
 DATAHANDLER_URL = "http://localhost:5001" 
+CHIP_BATCH = 50
+
+def get_html_template(template_name):
+    """Fetches the HTML template from the DataHandler to reduce code repetition."""
+    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/{template_name}")
+    if response.status_code == 200:
+        return response.text, None
+    return None, f"Error loading template: {response.status_code}"
 
 @app.route('/')
 def home():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/home.html")
-    if response.status_code == 200:
-        html_string = response.text
-        return render_template_string(html_string) 
-    else:
-        return f"Error loading template: {response.status_code}", 500
-
+    html_string, err = get_html_template("home.html")
+    if err: return err, 500
+    return render_template_string(html_string) 
 
 @app.route('/what-is-fit')
 def what_is_fit():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/what-is-fit.html")
-    if response.status_code == 200:
-        html_string = response.text
-        return render_template_string(html_string) 
-    else:
-        return f"Error loading template: {response.status_code}", 500
+    html_string, err = get_html_template("what-is-fit.html")
+    if err: return err, 500
+    return render_template_string(html_string) 
 
 @app.route('/about')
 def about():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/about.html")
-    if response.status_code == 200:
-        html_string = response.text
-        return render_template_string(html_string) 
-    else:
-        return f"Error loading template: {response.status_code}", 500
+    html_string, err = get_html_template("about.html")
+    if err: return err, 500
+    return render_template_string(html_string) 
 
 @app.route('/fit')
 def fit():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/fit.html")
-    if response.status_code == 200:
-        html_string = response.text
-        return render_template_string(html_string,optimal_n=list(get_optimal_n())) 
-    else:
-        return f"Error loading template: {response.status_code}", 500
-        
-
+    html_string, err = get_html_template("fit.html")
+    if err: return err, 500
+    return render_template_string(html_string, optimal_n=list(get_optimal_n())) 
 
 @app.route('/fit/api')
 def fit_api():
-    return render_template('fit-api.html')
-
+    html_string, err = get_html_template("fit-api.html")
+    if err: return err, 500
+    return render_template_string(html_string)
 
 @app.route('/solution')
 def solution():
-    reponse = request.get(f"{DATAHANDLER_URL}/api/get-template/solution.html")
-    if response.status_code == 200:
-        html_string = response.text
-        return render_template_string(html_string)
-    else:
-         return f"Error loading template: {response.status_code}", 500
-
+    html_string, err = get_html_template("solution.html")
+    if err: return err, 500
+    return render_template_string(html_string)
 
 @app.route('/fit/explore')
 def explore_solutions():
-    """View the best submissions for a given number of squares."""
-
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/explore-solutions.html")
-    if response.status_code != 200:
-        return f"Error loading template: {response.status_code}", 500
+    html_string, err = get_html_template("explore-solutions.html")
+    if err: return err, 500
 
     from_db = get_available_square_counts()
     db_by_n = {r["square_count"]: r["submission_count"] for r in from_db}
@@ -99,7 +85,6 @@ def explore_solutions():
         submissions_list, total = get_best_submissions(n, page=page, per_page=per_page)
         total_pages = max(1, (total + per_page - 1) // per_page)
         
-    html_string = response.text
     return render_template_string(
         html_string,
         optimal_counts=optimal_counts[:CHIP_BATCH],
@@ -113,11 +98,8 @@ def explore_solutions():
         total=total,
     )
 
-
-CHIP_BATCH = 50
 @app.route('/api/fit/explore/square-counts')
 def api_fit_explore_square_counts():
-    """Paginated square counts for explore chips. group=optimal|found, offset=0, limit=50."""
     group = request.args.get('group')
     if group not in ('optimal', 'found'):
         return jsonify(error='group must be optimal or found'), 400
@@ -137,10 +119,8 @@ def api_fit_explore_square_counts():
         has_more = len(found_counts) > offset + limit
     return jsonify(items=items, has_more=has_more)
 
-
 @app.route('/api/submission/<int:submission_id>/squares')
 def api_submission_squares(submission_id):
-    """Return the squares of a submission as JSON for the visualiser."""
     rows = get_submission_squares(submission_id)
     squares = [
         {"cx": float(r["cx"]), "cy": float(r["cy"]),
@@ -149,10 +129,8 @@ def api_submission_squares(submission_id):
     ]
     return jsonify(squares=squares)
 
-
 @app.route('/api/fit/submit', methods=['POST'])
 def api_fit_submit():
-    """Accept a Fit game solution (JSON body with 'squares') and store it."""
     if not request.is_json:
         return jsonify(error='Content-Type must be application/json'), 400
     data = request.get_json() or {}
@@ -170,16 +148,11 @@ def api_fit_submit():
         return jsonify(error=err), 422
     return jsonify(submission_id=submission_id, message='Solution submitted.')
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/login.html")
-    
-    if response.status_code != 200:
-        return f"Error loading template: {response.status_code}", 500
+    html_string, err = get_html_template("login.html")
+    if err: return err, 500
         
-    html_string = response.text
-
     if request.method == 'POST':
         identifier = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -194,14 +167,11 @@ def login():
         return render_template_string(html_string, error='Invalid username or password.')
     return render_template_string(html_string)
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    response = requests.get(f"{DATAHANDLER_URL}/api/get-template/register.html")
-    if response.status_code != 200:
-        return f"Error loading template: {response.status_code}", 500
+    html_string, err = get_html_template("register.html")
+    if err: return err, 500
 
-    html_string = response.text
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
@@ -219,23 +189,15 @@ def register():
 
     return render_template_string(html_string)
 
-
 @app.route('/logout')
 def logout():
-    """Clear session and redirect to home."""
     session.clear()
     return redirect(url_for("home"))
 
-
 @app.route('/submissions')
 def submissions():
-    """View user's submitted solutions. Only for registered users."""
-
-    reponse = request.get(f"{DATAHANLDER_URL}/api/get_template/submissions.html")
-    if reponse != 200:
-        return f"Error loading template: {response.status_code}", 500
-
-    html_string = reponse.text
+    html_string, err = get_html_template("submissions.html")
+    if err: return err, 500
 
     user_id = session.get('user_id')
     is_guest = session.get('is_guest', False)
@@ -245,7 +207,7 @@ def submissions():
     per_page = 50
     submissions_list, total = get_user_submissions(user_id, page=page, per_page=per_page)
     total_pages = max(1, (total + per_page - 1) // per_page)
-    return render_template(
+    return render_template_string(
         html_string,
         submissions=submissions_list,
         page=page,
@@ -253,17 +215,10 @@ def submissions():
         total=total,
     )
 
-
 @app.route('/account/settings', methods=['GET', 'POST'])
 def account_settings():
-    """Edit account information (email and password). Only for registered users."""
-
-    reponse = request.get(f"{DATAHANLDER_URL}/api/get_template/account-settings.html")
-    if reponse != 200:
-        return f"Error loading template: {response.status_code}", 500
-
-    html_string = reponse.text
-
+    html_string, err = get_html_template("account-settings.html")
+    if err: return err, 500
 
     user_id = session.get('user_id')
     is_guest = session.get('is_guest', False)
@@ -303,12 +258,10 @@ def account_settings():
                 else:
                     error = err or "Failed to update password."
     
-    return render_template(html_string, user=user, error=error, success=success)
-
+    return render_template_string(html_string, user=user, error=error, success=success)
 
 @app.context_processor
 def inject_user():
-    """Make current user info available in all templates."""
     return {
         "current_user_id": session.get("user_id"),
         "current_username": session.get("username"),
