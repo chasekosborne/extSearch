@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-Delete all submission-related rows from the database.
-
-Order: validation_runs → submission_squares → submissions
-(Child tables first because of foreign keys.)
-
-Usage:
-  python scripts/drop_all_submissions.py           # dry run (counts only)
-  python scripts/drop_all_submissions.py --yes   # actually delete
-
-Requires DATABASE_URL (e.g. from .env).
-"""
 import os
 import sys
 
@@ -25,7 +13,7 @@ try:
 except ImportError:
     pass
 
-from db.connection import get_cursor
+from shared.db import get_cursor
 
 
 def main():

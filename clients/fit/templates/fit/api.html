@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('index.static', filename='style/home.css') }}">
+    <style>
+        .api-section { margin-top: 40px; }
+        .api-section h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+        .api-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; margin-top: 24px; color: #27272a; }
+        .endpoint { margin-bottom: 32px; }
+        .method-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600;
+            color: #fff; margin-right: 8px;
+        }
+        .method-post { background: #22c55e; }
+        .method-get { background: #3b82f6; }
+        .api-path {
+            font-family: 'DM Mono', monospace; font-size: 14px;
+            background: #f5f5f5; padding: 2px 8px; border-radius: 4px;
+        }
+        .api-desc { color: #71717a; font-size: 14px; margin: 8px 0 12px; }
+        .code-block {
+            background: #1a1a2e; color: #e5e5e5; border-radius: 8px;
+            padding: 20px 24px; overflow-x: auto; font-family: 'DM Mono', monospace;
+            font-size: 13.5px; line-height: 1.75; margin-bottom: 16px;
+            white-space: pre; tab-size: 4;
+        }
+        .code-block .cm { color: #6b7280; font-style: italic; }
+        .code-block .s { color: #86efac; }
+        .code-block .kw { color: #93c5fd; }
+        .code-block .fn { color: #c4b5fd; }
+        .code-block .nb { color: #fbbf24; }
+        .response-block {
+            background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 8px;
+            padding: 16px; margin-bottom: 16px;
+        }
+        .response-block pre {
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            color: #1a1a1a; overflow-x: auto; margin: 0;
+        }
+        .response-block p { font-weight: 500; margin-bottom: 8px; font-size: 13px; color: #1a1a1a; }
+        .tab-bar { display: flex; gap: 0; margin-bottom: 0; }
+        .tab-btn {
+            padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+            border: 1px solid #e5e5e5; border-bottom: none; background: #f5f5f5;
+            color: #71717a; border-radius: 8px 8px 0 0; transition: all 0.15s;
+        }
+        .tab-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-code-block { border-radius: 0 8px 8px 8px; margin-top: 0; }
+        .rate-info {
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+            padding: 12px 16px; font-size: 14px; color: #92400e; margin: 16px 0;
+        }
+        .data-format-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+        .data-format-table th { text-align: left; padding: 8px 12px; background: #f5f5f5; border: 1px solid #e5e5e5; font-weight: 600; }
+        .data-format-table td { padding: 8px 12px; border: 1px solid #e5e5e5; }
+        .data-format-table code { background: #f5f5f5; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+        .step-number {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%; background: #1a1a1a;
+            color: #fff; font-size: 12px; font-weight: 600; margin-right: 8px;
+        }
+        .back-button {
+            margin-top: 32px; padding: 10px 16px; border-radius: 8px;
+            border: 1px solid #e5e5e5; background: #f5f5f5; color: #1a1a1a;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .back-button:hover { background: #ececec; border-color: #d4d4d4; }
+    </style>
+{% endblock %}
+
+{% block title %}Fit API | extSearch{% endblock %}
+
+{% block content %}
+<main class="page">
+    <h1>Fit API</h1>
+    <p class="subtitle">
+        Programmatic access to submit square packing solutions from any language.
+    </p>
+
+    <!-- Quick start -->
+    <section class="api-section">
+        <h2>Quick Start</h2>
+        <p style="color: #52525b; margin-bottom: 16px;">
+            Two steps to submit solutions from your own code:
+        </p>
+
+        <p style="margin-bottom: 8px;">
+            <span class="step-number">1</span>
+            <strong>Get a token</strong>: exchange your username &amp; password for a JWT.
+        </p>
+        <div class="code-block">
+curl -X POST {{ request.host_url }}api/fit/token \
+    -H <span class="s">"Content-Type: application/json"</span> \
+    -d <span class="s">'{ "username": "you", "password": "yourpass" }'</span>
+
+<span class="cm"># → { "token": "eyJhbGciOi..." }</span>
+</div>
+
+        <p style="margin-bottom: 8px;">
+            <span class="step-number">2</span>
+            <strong>Submit a solution</strong>: send your squares with the token.
+        </p>
+        <div class="code-block">
+curl -X POST {{ request.host_url }}api/fit/submit \
+    -H <span class="s">"Content-Type: application/json"</span> \
+    -H <span class="s">"Authorization: Bearer YOUR_TOKEN"</span> \
+    -d <span class="s">'{
+          "squares": [
+              [{"x": 0, "y": 0}, {"x": 56, "y": 0}, {"x": 56, "y": 56}, {"x": 0, "y": 56}],
+              ...
+          ]
+        }'</span>
+</div>
+    </section>
+
+    <!-- Auth -->
+    <section class="api-section">
+        <h2>Authentication</h2>
+        <div class="endpoint">
+            <p>
+                <span class="method-badge method-post">POST</span>
+                <span class="api-path">/api/fit/token</span>
+            </p>
+            <p class="api-desc">Exchange credentials for a JWT token. Tokens are valid for 24 hours.</p>
+            <div class="response-block">
+                <p>Request:</p>
+                <pre><code>{"username": "alice", "password": "secret123"}</code></pre>
+            </div>
+            <div class="response-block">
+                <p>Success (200):</p>
+                <pre><code>{"token": "eyJhbGciOiJIUzI1NiIs..."}</code></pre>
+            </div>
+            <div class="response-block">
+                <p>Error (401):</p>
+                <pre><code>{"error": "Invalid credentials."}</code></pre>
+            </div>
+            <p style="color: #71717a; font-size: 13px; margin-top: 8px;">
+                Include the token in all subsequent requests as:<br>
+                <code style="background:#f5f5f5; padding:2px 6px; border-radius:4px;">Authorization: Bearer &lt;token&gt;</code>
+            </p>
+        </div>
+    </section>
+
+    <!-- Submit -->
+    <section class="api-section">
+        <h2>Submit Solution</h2>
+        <div class="endpoint">
+            <p>
+                <span class="method-badge method-post">POST</span>
+                <span class="api-path">/api/fit/submit</span>
+            </p>
+            <p class="api-desc">Submit a square packing solution. Requires authentication.</p>
+
+            <h3>Data Format</h3>
+            <p style="color: #52525b; font-size: 14px; margin-bottom: 8px;">
+                Each square is represented by its 4 corners in pixel coordinates.
+                One unit square = 56 &times; 56 pixels.
+            </p>
+            <table class="data-format-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><code>squares</code></td><td>array</td><td>Array of squares, each a 4-element array of corner points</td></tr>
+                    <tr><td>Corner</td><td><code>{"x": float, "y": float}</code></td><td>Pixel coordinate. Order: top-left, top-right, bottom-right, bottom-left (before rotation)</td></tr>
+                </tbody>
+            </table>
+
+            <div class="response-block">
+                <p>Request body:</p>
+                <pre><code>{
+  "squares": [
+    [
+      {"x": 0,  "y": 0},
+      {"x": 56, "y": 0},
+      {"x": 56, "y": 56},
+      {"x": 0,  "y": 56}
+    ],
+    [
+      {"x": 56, "y": 0},
+      {"x": 112, "y": 0},
+      {"x": 112, "y": 56},
+      {"x": 56,  "y": 56}
+    ]
+  ]
+}</code></pre>
+            </div>
+            <div class="response-block">
+                <p>Success (200):</p>
+                <pre><code>{"submission_id": 42, "message": "Solution submitted."}</code></pre>
+            </div>
+
+            <div class="rate-info">
+                <strong>Rate limit:</strong> 60 submissions per hour per account.
+                Check <code>X-RateLimit-Remaining</code> in response headers.
+                If exceeded, a <code>429</code> is returned with <code>Retry-After</code>.
+            </div>
+        </div>
+    </section>
+
+    <!-- Retrieve -->
+    <section class="api-section">
+        <h2>Retrieve Solution</h2>
+        <div class="endpoint">
+            <p>
+                <span class="method-badge method-get">GET</span>
+                <span class="api-path">/api/submission/&lt;id&gt;/squares</span>
+            </p>
+            <p class="api-desc">Retrieve the squares of any submission. No authentication required.</p>
+            <div class="response-block">
+                <p>Response:</p>
+                <pre><code>{
+  "squares": [
+    {"cx": 28.0, "cy": 28.0, "ux": 0.7071, "uy": 0.7071},
+    ...
+  ]
+}</code></pre>
+            </div>
+            <p style="color: #71717a; font-size: 13px;">
+                <code>cx, cy</code> = centre, <code>ux, uy</code> = unit direction vector.
+                Reconstruct corners using a half-diagonal of <code>28√2 ≈ 39.598</code> pixels.
+            </p>
+        </div>
+    </section>
+
+    <!-- Code examples -->
+    <section class="api-section">
+        <h2>Code Examples</h2>
+        <p style="color: #52525b; margin-bottom: 16px;">
+            Complete working examples. Copy, set your credentials, and run.
+        </p>
+
+        <div class="tab-bar">
+            <button type="button" class="tab-btn active" data-tab="python">Python</button>
+            <button type="button" class="tab-btn" data-tab="javascript">JavaScript</button>
+            <button type="button" class="tab-btn" data-tab="curl">curl</button>
+            <button type="button" class="tab-btn" data-tab="csharp">C#</button>
+            <button type="button" class="tab-btn" data-tab="rust">Rust</button>
+        </div>
+
+        <div class="tab-content active" data-tab="python">
+<div class="code-block tab-code-block">
+<span class="kw">import</span> requests
+
+BASE_URL = <span class="s">"{{ request.host_url.rstrip('/') }}"</span>
+UNIT     = <span class="nb">56</span>   <span class="cm"># one square = 56 × 56 pixels</span>
+
+
+<span class="cm"># ── Step 1: Authenticate ──────────────────────────────────</span>
+
+response = requests.<span class="fn">post</span>(
+    <span class="s">f"{BASE_URL}/api/fit/token"</span>,
+    json = {
+        <span class="s">"username"</span>: <span class="s">"your_username"</span>,
+        <span class="s">"password"</span>: <span class="s">"your_password"</span>,
+    },
+)
+token   = response.<span class="fn">json</span>()[<span class="s">"token"</span>]
+headers = { <span class="s">"Authorization"</span>: <span class="s">f"Bearer {token}"</span> }
+
+
+<span class="cm"># ── Step 2: Build a solution ──────────────────────────────</span>
+<span class="cm"># Each square is 4 corner points: TL → TR → BR → BL</span>
+
+squares = []
+
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nb">2</span>):
+    x = i * UNIT
+    squares.<span class="fn">append</span>([
+        { <span class="s">"x"</span>: x,        <span class="s">"y"</span>: <span class="nb">0</span>    },   <span class="cm"># top-left</span>
+        { <span class="s">"x"</span>: x + UNIT, <span class="s">"y"</span>: <span class="nb">0</span>    },   <span class="cm"># top-right</span>
+        { <span class="s">"x"</span>: x + UNIT, <span class="s">"y"</span>: UNIT },   <span class="cm"># bottom-right</span>
+        { <span class="s">"x"</span>: x,        <span class="s">"y"</span>: UNIT },   <span class="cm"># bottom-left</span>
+    ])
+
+
+<span class="cm"># ── Step 3: Submit ────────────────────────────────────────</span>
+
+result = requests.<span class="fn">post</span>(
+    <span class="s">f"{BASE_URL}/api/fit/submit"</span>,
+    json    = { <span class="s">"squares"</span>: squares },
+    headers = headers,
+)
+
+<span class="fn">print</span>(result.<span class="fn">json</span>())
+<span class="fn">print</span>(<span class="s">f"Submissions remaining: {result.headers.get('X-RateLimit-Remaining')}"</span>)
+</div>
+        </div>
+
+        <div class="tab-content" data-tab="javascript">
+<div class="code-block tab-code-block">
+<span class="kw">const</span> BASE_URL = <span class="s">"{{ request.host_url.rstrip('/') }}"</span>;
+<span class="kw">const</span> UNIT     = <span class="nb">56</span>;
+
+
+<span class="cm">// ── Step 1: Authenticate ──────────────────────────────────</span>
+
+<span class="kw">const</span> authResponse = <span class="kw">await</span> <span class="fn">fetch</span>(`${BASE_URL}/api/fit/token`, {
+    method:  <span class="s">"POST"</span>,
+    headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span> },
+    body:    JSON.<span class="fn">stringify</span>({
+        username: <span class="s">"your_username"</span>,
+        password: <span class="s">"your_password"</span>,
+    }),
+});
+
+<span class="kw">const</span> { token } = <span class="kw">await</span> authResponse.<span class="fn">json</span>();
+
+
+<span class="cm">// ── Step 2: Build a solution ──────────────────────────────</span>
+
+<span class="kw">const</span> squares = [<span class="nb">0</span>, <span class="nb">1</span>].<span class="fn">map</span>(i => {
+    <span class="kw">const</span> x = i * UNIT;
+    <span class="kw">return</span> [
+        { x: x,        y: <span class="nb">0</span>    },   <span class="cm">// top-left</span>
+        { x: x + UNIT, y: <span class="nb">0</span>    },   <span class="cm">// top-right</span>
+        { x: x + UNIT, y: UNIT },   <span class="cm">// bottom-right</span>
+        { x: x,        y: UNIT },   <span class="cm">// bottom-left</span>
+    ];
+});
+
+
+<span class="cm">// ── Step 3: Submit ────────────────────────────────────────</span>
+
+<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">fetch</span>(`${BASE_URL}/api/fit/submit`, {
+    method:  <span class="s">"POST"</span>,
+    headers: {
+        <span class="s">"Content-Type"</span>:  <span class="s">"application/json"</span>,
+        <span class="s">"Authorization"</span>: `Bearer ${token}`,
+    },
+    body: JSON.<span class="fn">stringify</span>({ squares }),
+});
+
+console.<span class="fn">log</span>(<span class="kw">await</span> result.<span class="fn">json</span>());
+</div>
+        </div>
+
+        <div class="tab-content" data-tab="curl">
+<div class="code-block tab-code-block">
+<span class="cm"># ── Step 1: Get a token ───────────────────────────────────</span>
+
+TOKEN=$( \
+    curl -s -X POST {{ request.host_url }}api/fit/token \
+        -H <span class="s">"Content-Type: application/json"</span> \
+        -d <span class="s">'{
+              "username": "your_username",
+              "password": "your_password"
+            }'</span> \
+    | jq -r .token \
+)
+
+
+<span class="cm"># ── Step 2: Submit a solution ─────────────────────────────</span>
+<span class="cm"># Two axis-aligned unit squares side by side</span>
+
+curl -v -X POST {{ request.host_url }}api/fit/submit \
+    -H <span class="s">"Content-Type: application/json"</span> \
+    -H <span class="s">"Authorization: Bearer $TOKEN"</span> \
+    -d <span class="s">'{
+          "squares": [
+              [
+                  {"x":  0, "y":  0},
+                  {"x": 56, "y":  0},
+                  {"x": 56, "y": 56},
+                  {"x":  0, "y": 56}
+              ],
+              [
+                  {"x":  56, "y":  0},
+                  {"x": 112, "y":  0},
+                  {"x": 112, "y": 56},
+                  {"x":  56, "y": 56}
+              ]
+          ]
+        }'</span>
+</div>
+        </div>
+
+        <div class="tab-content" data-tab="csharp">
+<div class="code-block tab-code-block">
+<span class="kw">using</span> System.Net.Http;
+<span class="kw">using</span> System.Text;
+<span class="kw">using</span> System.Text.Json;
+
+<span class="kw">var</span> http    = <span class="kw">new</span> <span class="fn">HttpClient</span>();
+<span class="kw">var</span> baseUrl = <span class="s">"{{ request.host_url.rstrip('/') }}"</span>;
+
+
+<span class="cm">// ── Step 1: Authenticate ──────────────────────────────────</span>
+
+<span class="kw">var</span> authBody = JsonSerializer.<span class="fn">Serialize</span>(<span class="kw">new</span> {
+    username = <span class="s">"your_username"</span>,
+    password = <span class="s">"your_password"</span>,
+});
+
+<span class="kw">var</span> authResp = <span class="kw">await</span> http.<span class="fn">PostAsync</span>(
+    $<span class="s">"{baseUrl}/api/fit/token"</span>,
+    <span class="kw">new</span> <span class="fn">StringContent</span>(authBody, Encoding.UTF8, <span class="s">"application/json"</span>)
+);
+
+<span class="kw">var</span> authJson = JsonDocument.<span class="fn">Parse</span>(
+    <span class="kw">await</span> authResp.Content.<span class="fn">ReadAsStringAsync</span>()
+);
+<span class="kw">var</span> token = authJson.RootElement
+    .<span class="fn">GetProperty</span>(<span class="s">"token"</span>)
+    .<span class="fn">GetString</span>();
+
+http.DefaultRequestHeaders.<span class="fn">Add</span>(<span class="s">"Authorization"</span>, $<span class="s">"Bearer {token}"</span>);
+
+
+<span class="cm">// ── Step 2: Build a solution ──────────────────────────────</span>
+
+<span class="kw">var</span> squares = <span class="kw">new</span>[] {
+    <span class="kw">new</span>[] {
+        <span class="kw">new</span> { x =  <span class="nb">0</span>, y =  <span class="nb">0</span> },   <span class="cm">// top-left</span>
+        <span class="kw">new</span> { x = <span class="nb">56</span>, y =  <span class="nb">0</span> },   <span class="cm">// top-right</span>
+        <span class="kw">new</span> { x = <span class="nb">56</span>, y = <span class="nb">56</span> },   <span class="cm">// bottom-right</span>
+        <span class="kw">new</span> { x =  <span class="nb">0</span>, y = <span class="nb">56</span> },   <span class="cm">// bottom-left</span>
+    },
+};
+
+
+<span class="cm">// ── Step 3: Submit ────────────────────────────────────────</span>
+
+<span class="kw">var</span> body = JsonSerializer.<span class="fn">Serialize</span>(<span class="kw">new</span> { squares });
+
+<span class="kw">var</span> resp = <span class="kw">await</span> http.<span class="fn">PostAsync</span>(
+    $<span class="s">"{baseUrl}/api/fit/submit"</span>,
+    <span class="kw">new</span> <span class="fn">StringContent</span>(body, Encoding.UTF8, <span class="s">"application/json"</span>)
+);
+
+Console.<span class="fn">WriteLine</span>(<span class="kw">await</span> resp.Content.<span class="fn">ReadAsStringAsync</span>());
+</div>
+        </div>
+
+        <div class="tab-content" data-tab="rust">
+<div class="code-block tab-code-block">
+<span class="cm">// Cargo.toml dependencies:</span>
+<span class="cm">//   reqwest   = { version = "0.12", features = ["json"] }</span>
+<span class="cm">//   serde_json = "1"</span>
+<span class="cm">//   tokio      = { version = "1", features = ["full"] }</span>
+
+<span class="kw">use</span> serde_json::json;
+
+#[tokio::main]
+<span class="kw">async fn</span> <span class="fn">main</span>() -> Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+
+    <span class="kw">let</span> base_url = <span class="s">"{{ request.host_url.rstrip('/') }}"</span>;
+    <span class="kw">let</span> client   = reqwest::Client::<span class="fn">new</span>();
+
+
+    <span class="cm">// ── Step 1: Authenticate ─────────────────────────────</span>
+
+    <span class="kw">let</span> auth: serde_json::Value = client
+        .<span class="fn">post</span>(<span class="fn">format!</span>(<span class="s">"{base_url}/api/fit/token"</span>))
+        .<span class="fn">json</span>(&amp;json!({
+            <span class="s">"username"</span>: <span class="s">"your_username"</span>,
+            <span class="s">"password"</span>: <span class="s">"your_password"</span>,
+        }))
+        .<span class="fn">send</span>().<span class="kw">await</span>?
+        .<span class="fn">json</span>().<span class="kw">await</span>?;
+
+    <span class="kw">let</span> token = auth[<span class="s">"token"</span>].<span class="fn">as_str</span>().<span class="fn">unwrap</span>();
+
+
+    <span class="cm">// ── Step 2: Build + submit ───────────────────────────</span>
+
+    <span class="kw">let</span> squares = json!([[
+        { <span class="s">"x"</span>:  <span class="nb">0</span>, <span class="s">"y"</span>:  <span class="nb">0</span> },
+        { <span class="s">"x"</span>: <span class="nb">56</span>, <span class="s">"y"</span>:  <span class="nb">0</span> },
+        { <span class="s">"x"</span>: <span class="nb">56</span>, <span class="s">"y"</span>: <span class="nb">56</span> },
+        { <span class="s">"x"</span>:  <span class="nb">0</span>, <span class="s">"y"</span>: <span class="nb">56</span> },
+    ]]);
+
+    <span class="kw">let</span> resp: serde_json::Value = client
+        .<span class="fn">post</span>(<span class="fn">format!</span>(<span class="s">"{base_url}/api/fit/submit"</span>))
+        .<span class="fn">bearer_auth</span>(token)
+        .<span class="fn">json</span>(&amp;json!({ <span class="s">"squares"</span>: squares }))
+        .<span class="fn">send</span>().<span class="kw">await</span>?
+        .<span class="fn">json</span>().<span class="kw">await</span>?;
+
+    <span class="fn">println!</span>(<span class="s">"{resp}"</span>);
+    Ok(())
+}
+</div>
+        </div>
+    </section>
+
+    <section class="api-section" style="margin-bottom: 48px;">
+        <h2>Notes</h2>
+        <ul style="color: #52525b; font-size: 14px; line-height: 1.8; padding-left: 20px;">
+            <li>1 unit square = 56 &times; 56 pixels. Coordinates are in pixel space.</li>
+            <li>Squares may be rotated. Corners define the actual geometry.</li>
+            <li>Solutions for square counts with known optimal packings are rejected.</li>
+            <li>Submitted solutions start as <em>pending</em> and are verified asynchronously.</li>
+            <li>Duplicate solutions (same bounding box for the same square count) are rejected.</li>
+            <li>Tokens expire after 24 hours. Request a new one when needed.</li>
+        </ul>
+    </section>
+
+    <button type="button" class="back-button" onclick="window.history.back()">← Go back</button>
+</main>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tab = this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+            this.classList.add('active');
+            document.querySelector('.tab-content[data-tab="' + tab + '"]').classList.add('active');
+        });
+    });
+})();
+</script>
+{% endblock %}

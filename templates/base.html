@@ -2,7 +2,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-        <link rel="icon" type="image/png" href="static/img/Icon.png">
+        <link rel="icon" type="image/png" href="{{ url_for('index.static', filename='img/Icon.svg') }}">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -41,13 +41,11 @@
 
     <body>
         <header class="header">
-            <a href="{{ url_for('home') }}" class="logo">
-                <img src="{{ url_for('static', filename='img/Icon.png') }}" alt="ExtSearch" />
-            </a>
+            <a href="{{ url_for('index.home') }}" class="logo">Home</a>
             
-            {% if request.endpoint != 'fit' %}
+            {% if request.endpoint != 'fit.game' %}
             <nav>
-                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('index.about') }}">About</a>
                 <a href="https://github.com/chasekosborne/ExtSearch" target="_blank" rel="noopener noreferrer">GitHub</a>
             </nav>
             {% endif %}
@@ -59,14 +57,14 @@
                 </span>
                 <div class="guest-dropdown-menu">
                     {% if not is_guest %}
-                    <a href="{{ url_for('submissions') }}">My Submissions</a>
-                    <a href="{{ url_for('account_settings') }}">Account Settings</a>
+                    <a href="{{ url_for('index.submissions') }}">My Submissions</a>
+                    <a href="{{ url_for('index.account_settings') }}">Account Settings</a>
                     {% endif %}
-                    <a href="{{ url_for('logout') }}">Log out</a>
+                    <a href="{{ url_for('index.logout') }}">Log out</a>
                 </div>
             </div>
             {% else %}
-            <a href="{{ url_for('login') }}" class="top-right-btn">Login</a>
+            <a href="{{ url_for('index.login') }}" class="top-right-btn">Login</a>
             {% endif %}
 
         </header>

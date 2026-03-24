@@ -125,7 +125,7 @@ Updates:
 Logic:
 
 1. If there are no squares:
-   - Show `—` and hide the bounding box.
+   - Show `-` and hide the bounding box.
 2. For each square:
    - Use `getRotatedSquareBounds` to expand a global bounding box.
 3. Compute side lengths in square units:
