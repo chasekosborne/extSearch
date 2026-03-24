@@ -7,9 +7,10 @@ class AuthServ:
     authDb = None
     
     def __init__(this):
-        if not path.isfile("./auth.sqlite"): # Setup userDb
-            this.authDb = db.connect("auth.sqlite")
+        firstRun = not path.isfile("./auth.sqlite")
+        this.authDb = db.connect("auth.sqlite")
 
+        if firstRun: # Setup userDb
             temp = this.authDb.cursor()
             # temp.executescript("""
             #     BEGIN;
@@ -35,9 +36,6 @@ class AuthServ:
             temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
             temp.execute("""INSERT INTO tokens (authHead,authTail,id) VALUES ("abc","def",0)""")
             this.authDb.commit() # Needed for data written...
-        else:
-            this.authDb = db.connect("auth.sqlite")
-            print("connected",this.authDb)
             
 
 if __name__ == "__main__":
