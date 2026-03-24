@@ -34,8 +34,20 @@ let zoom = 1;
 let panX = 0;
 let panY = 0;
 
+/** Undo/redo: full board snapshots (JSON). Clipboard: shallow copy of last copied square. */
+let undoStack = [];
+let redoStack = [];
+let clipboard = null;
+
+/** Record current board before a mutating action; clears redo branch. */
+function pushUndoState() {
+  undoStack.push(JSON.stringify(squares));
+  redoStack = [];
+}
+
 /* ── Snap-to-grid ── */
-let snapGridSize = 0.1; // in unit-square multiples; min 0.00001, position snap always on
+const MIN_SNAP_GRID_SIZE = 0.0001;
+let snapGridSize = 0.1; // in unit-square multiples; position snap always on
 const snapSizeEl = document.getElementById('snap-size');
 
 /* ── Snap rotation (independent of position snap) ── */
@@ -47,7 +59,12 @@ const snapAngleStepEl = document.getElementById('snap-angle-step');
 function initSnapFromDom() {
   if (snapSizeEl) {
     const v = parseFloat(snapSizeEl.value);
-    if (v >= 0.00001) snapGridSize = v;
+    if (!isNaN(v)) {
+      snapGridSize = Math.max(v, MIN_SNAP_GRID_SIZE);
+      if (v < MIN_SNAP_GRID_SIZE) {
+        snapSizeEl.value = String(MIN_SNAP_GRID_SIZE);
+      }
+    }
   }
   if (snapAngleStepEl) {
     const v = parseFloat(snapAngleStepEl.value);
@@ -59,7 +76,12 @@ initSnapFromDom();
 if (snapSizeEl) {
   snapSizeEl.addEventListener('input', function() {
     const v = parseFloat(this.value);
-    if (v >= 0.00001) snapGridSize = v;
+    if (!isNaN(v)) {
+      snapGridSize = Math.max(v, MIN_SNAP_GRID_SIZE);
+      if (v < MIN_SNAP_GRID_SIZE) {
+        this.value = String(MIN_SNAP_GRID_SIZE);
+      }
+    }
   });
 }
 if (snapRotationEnabledEl) {

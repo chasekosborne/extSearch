@@ -21,7 +21,7 @@ _ip_hits: dict[str, list[float]] = {}
 
 IP_WINDOW = 3600
 IP_MAX_ANON = 10
-IP_MAX_AUTH = 120
+IP_MAX_AUTH = 60
 
 
 # Per-IP sliding-window rate check, returns (allowed, retry_after_seconds)
