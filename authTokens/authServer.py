@@ -2,6 +2,7 @@
 ##### Methods for authHead+Tail token authentication
 import sqlite3 as db # PROTOTYPING DB, DO NOT USE IN PRODUCTION, THE KRAKEN WILL COME
 import os.path as path
+from time import time
 
 class AuthServ:
     authDb = None
@@ -19,29 +20,34 @@ class AuthServ:
             #         "email" varchar UNIQUE,
             #         "password_hash" varchar,
             #         "username" varchar UNIQUE,
-            #         "created_at" timestamp NOT NULL DEFAULT (now())
+            #         "created_at" timestamp NOT NULL DEFAULT (now()) ?
             #     );
             #     CREATE TABLE tokens(
             #         "authHead" varchar UNIQUE AS PRIMARY KEY,
             #         "authTail" varchar,
             #         "serverScope" varchar,
             #         "id" BIGINT AS FOREIGN KEY REFERENCES users(id),
-            #         "expiry" timestamp NOT NULL DEFAULT (now()+36000)
+            #         "expiry" timestamp NOT NULL DEFAULT (now()+36000) ?
             #     );
             #     COMMIT;
             # """)
             temp.execute("CREATE TABLE users(id BIGINT PRIMARY KEY,email varchar UNIQUE,password_hash varchar,username varchar UNIQUE,created_at timestamp)")
             temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id BIGINT REFERENCES users(id),expiry timestamp)")
 
-            temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
-            temp.execute("""INSERT INTO tokens (authHead,authTail,id) VALUES ("abc","def",0)""")
+            temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""")
+            # temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
+            # temp.execute("""INSERT INTO tokens (authHead,authTail,id) VALUES ("abc","def",0)""")
+            # temp.execute("""INSERT IGNORE INTO tokens (authHead,authTail) VALUES ("abc1,"def")""")
             this.authDb.commit() # Needed for data written...
-            
+    ###
+#####
 
 if __name__ == "__main__":
     temp = AuthServ()
 
     print("DB STATE")
+    # print(temp.authDb.cursor().execute("PRAGMA table_info(users);").fetchall())
+
     print("users:")
     for row in temp.authDb.cursor().execute("SELECT * FROM users"):
         print(row)
