@@ -3,6 +3,9 @@
 import sqlite3 as db # PROTOTYPING DB, DO NOT USE IN PRODUCTION, THE KRAKEN WILL COME
 import os.path as path
 from time import time
+import hashlib
+
+CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
 
 class AuthServ:
     authDb = None
@@ -31,15 +34,56 @@ class AuthServ:
             #     );
             #     COMMIT;
             # """)
-            temp.execute("CREATE TABLE users(id BIGINT PRIMARY KEY,email varchar UNIQUE,password_hash varchar,username varchar UNIQUE,created_at timestamp)")
+            temp.execute("CREATE TABLE users(id BIGINT PRIMARY KEY UNIQUE,email varchar UNIQUE,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
             temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id BIGINT REFERENCES users(id),expiry timestamp)")
 
-            temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""")
+            temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""") # Anonymous user for 'temporary'/unsigned users, only auth tokens allowed, no login thus hash null.
             # temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
             # temp.execute("""INSERT INTO tokens (authHead,authTail,id) VALUES ("abc","def",0)""")
             # temp.execute("""INSERT IGNORE INTO tokens (authHead,authTail) VALUES ("abc1,"def")""")
+
+            # Testing users:
+            temp.execute(f"""INSERT INTO users (id,username,created_at,last_login) VALUES (1,"anonymous1",{time()},{time()+1000})""")
+            temp.execute(f"""INSERT INTO users (id,username,created_at,last_login,password_hash) VALUES (2,"anonymous2",{time()},{time()-1},"UNHASHED_PASSWORD")""")
             this.authDb.commit() # Needed for data written...
     ###
+
+    def userUidAuth(this,uid,timestamps,challenges,results): # In the future, make many challenges. Treating input as 'safe'
+        # UID lookup
+        userFetch = this.authDb.cursor().execute(f""" SELECT password_hash,last_login FROM users WHERE id = {uid}""").fetchone() # No sql injection prevention
+        if userFetch is None:
+            print(userFetch)
+            print("No user found. Not logging in")
+            return False
+
+        # Validate timestamp.
+        if not isinstance(timestamps,float) or abs(timestamps - time()) >= CHALLENGE_AUTH_TIME_SYNC_RANGE: # Note python processes statements sequentially, ie. early success means math not done on None value...
+            print(timestamps)
+            print("Timestamp check failed or invalid. Time may be out of sync.")
+            return False
+
+        if isinstance(userFetch[1],float) and timestamps <= userFetch[1]: # If lastLogin time exists
+            print(timestamps,userFetch[1])
+            print("Timestamp check failed. Attempted replay.")
+            return False
+
+        # Check challenge string, avoid saving intermediate values to variables...
+        # (str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8')
+        print((str(userFetch[0])+str(timestamps)+str(challenges)))
+        # hashed = hashlib.sha256().update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
+        # print(hashed)
+        hash = hashlib.sha256()
+        hash.update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
+        testResult = hash.hexdigest()
+        print(testResult)
+
+        if testResult == results:
+            print("User auth succeeded...")
+            this.authDb.cursor().execute(f""" UPDATE users SET last_login = {time()} WHERE id = {uid} """)
+            return True
+
+        print("User auth failed.")
+        return False
 #####
 
 if __name__ == "__main__":
@@ -55,3 +99,23 @@ if __name__ == "__main__":
     print("\ntokens:")
     for row in temp.authDb.cursor().execute("SELECT * FROM tokens"):
         print(row)
+
+    temp.userUidAuth(0,None,None,None)
+    temp.userUidAuth(0,time()+16,None,None)
+    temp.userUidAuth(0,time()-10,None,None)
+    temp.userUidAuth(2,None,None,None)
+    temp.userUidAuth(1,time()-10,None,None)
+
+    testTime = time()
+    hash = hashlib.sha256()
+    hash.update(("UNHASHED_PASSWORD"+str(testTime)+"test").encode('utf-8'))
+    temp.userUidAuth(2,testTime,"test",hash.hexdigest())
+    temp.userUidAuth(2,testTime,"test",hash.hexdigest()) # Should fail due to replay attack...
+    temp.userUidAuth(2,testTime+1,"test",hash.hexdigest()) # Should fail due to replay attack...
+    temp.userUidAuth(2,testTime+15,"test",hash.hexdigest()) # Should fail due to replay attack...
+    temp.userUidAuth(2,testTime-15,"test",hash.hexdigest()) # Should fail due to replay attack...
+
+    testTime = time()+10
+    hash = hashlib.sha256()
+    hash.update(("UNHASHED_PASSWORD"+str(testTime)+"test").encode('utf-8')) # Note result of challenges MUST be calculated same way...
+    temp.userUidAuth(2,testTime,"test",hash.hexdigest())
