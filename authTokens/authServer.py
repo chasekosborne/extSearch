@@ -37,6 +37,7 @@ class AuthServ:
             # """)
             temp.execute("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,email varchar,salt varchar,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
             temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id BIGINT REFERENCES users(id),expiry timestamp)")
+            temp.execute("CREATE TABLE servers(sid INTEGER PRIMARY KEY AUTOINCREMENT,serverPubKey varchar, serverScope varchar UNIQUE)") # Server registry, should be cleared on init? AT LEAST need to maintain an 'authServer' origin used as indexPage tokens
 
             temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""") # Anonymous user for 'temporary'/unsigned users, only auth tokens allowed, no login thus hash null.
             # temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
@@ -46,6 +47,10 @@ class AuthServ:
             # Testing users:
             temp.execute(f"""INSERT INTO users (id,username,created_at,last_login) VALUES (1,"anonymous1",{time()},{time()+1000})""")
             temp.execute(f"""INSERT INTO users (id,username,created_at,last_login,password_hash) VALUES (2,"anonymous2",{time()},{time()-1},"UNHASHED_PASSWORD")""")
+            
+            # Server auth registry 
+            temp.execute(f""" INSERT INTO servers (serverPubKey,serverScope) VALUES ("{"PUBLIC_INDEX_KEY_GOES_HERE"}","indexServer")""") # Use key to validate messages sent by indexServer (eg. adding of servers...)
+
             this.authDb.commit() # Needed for data written...
     ###
 
@@ -111,6 +116,15 @@ class AuthServ:
         this.authDb.commit()
         return True
     ###
+
+    def serverRegister(this,servPubKey,servName):
+        if (this.authDb.cursor().execute(f""" SELECT serverScope FROM servers WHERE serverScope = "{servName}" """).fetchone()):
+            print("Cannot add server, name taken.")
+            return False
+
+        this.authDb.cursor().execute(f""" INSERT INTO servers (serverPubKey,serverScope) VALUES ("{servPubKey}","{servName}") """)
+        this.authDb.commit()
+        return True
 #####
 
 if __name__ == "__main__":
@@ -125,6 +139,10 @@ if __name__ == "__main__":
     
     print("\ntokens:")
     for row in temp.authDb.cursor().execute("SELECT * FROM tokens"):
+        print(row)
+
+    print("\n servers:")
+    for row in temp.authDb.cursor().execute("SELECT * FROM servers"):
         print(row)
 
     temp.userUidAuth(0,None,None,None)
