@@ -5,15 +5,19 @@ import sqlite3 as db # PROTOTYPING DB, DO NOT USE IN PRODUCTION, THE KRAKEN WILL
 import os.path as path
 from time import time
 import hashlib
+from os import urandom
 
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
+DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds?
 
-class AuthServ:
+class AuthServ: 
+    # Should maintain pub+priv key pair, pub to distribute to servers, priv to decrypt recieved messages... Same priv key for simplicity, distinguish serverOrigin via signing.
     authDb = None
     
     def __init__(this):
         firstRun = not path.isfile("./auth.sqlite")
         this.authDb = db.connect("auth.sqlite")
+        this.authDb.execute('PRAGMA foreign_keys = ON') # Needed for cross table checks
 
         if firstRun: # Setup userDb
             temp = this.authDb.cursor()
@@ -36,8 +40,8 @@ class AuthServ:
             #     COMMIT;
             # """)
             temp.execute("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,email varchar,salt varchar,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
-            temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id BIGINT REFERENCES users(id),expiry timestamp)")
             temp.execute("CREATE TABLE servers(sid INTEGER PRIMARY KEY AUTOINCREMENT,serverPubKey varchar, serverScope varchar UNIQUE)") # Server registry, should be cleared on init? AT LEAST need to maintain an 'authServer' origin used as indexPage tokens
+            temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id,expiry timestamp, FOREIGN KEY (serverScope) REFERENCES servers(serverScope), FOREIGN KEY (id) REFERENCES users(id) )")
 
             temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""") # Anonymous user for 'temporary'/unsigned users, only auth tokens allowed, no login thus hash null.
             # temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
@@ -49,7 +53,7 @@ class AuthServ:
             temp.execute(f"""INSERT INTO users (id,username,created_at,last_login,password_hash) VALUES (2,"anonymous2",{time()},{time()-1},"UNHASHED_PASSWORD")""")
             
             # Server auth registry 
-            temp.execute(f""" INSERT INTO servers (serverPubKey,serverScope) VALUES ("{"PUBLIC_INDEX_KEY_GOES_HERE"}","indexServer")""") # Use key to validate messages sent by indexServer (eg. adding of servers...)
+            temp.execute(f""" INSERT INTO servers (serverPubKey,serverScope) VALUES ("{"PUBLIC_INDEX_KEY_GOES_HERE"}","indexServer")""") # Use key to validate messages sent by indexServer (eg. adding of servers...). Multiple server ips allowed to correspond to same serverName. Same user could have multiple servers with same pub key.
 
             this.authDb.commit() # Needed for data written...
     ###
@@ -117,7 +121,7 @@ class AuthServ:
         return True
     ###
 
-    def serverRegister(this,servPubKey,servName):
+    def serverAdd(this,servPubKey,servName):
         if (this.authDb.cursor().execute(f""" SELECT serverScope FROM servers WHERE serverScope = "{servName}" """).fetchone()):
             print("Cannot add server, name taken.")
             return False
@@ -125,6 +129,31 @@ class AuthServ:
         this.authDb.cursor().execute(f""" INSERT INTO servers (serverPubKey,serverScope) VALUES ("{servPubKey}","{servName}") """)
         this.authDb.commit()
         return True
+    ###
+
+    def userTokenSpawn(this,uid,serverScope,expiry=time()+DEFAULT_TOKEN_EXPIRY_LENGTH):
+        # Produce authHead+Tail pair: ie. one sha256 string split...
+        authHead = None
+        authTail = None
+
+        while(True): # DoWhile
+            hash = hashlib.sha256()
+            hash.update(urandom(32)) # Sha256 should only produce 32 bytes (256bits)
+            authFull = hash.hexdigest()
+
+            authHead = authFull[:32]
+            authTail = authFull[32:]
+
+            print(authFull)
+            
+            if not (this.authDb.cursor().execute(f""" SELECT authHead FROM tokens WHERE authHead = "{authHead}" """).fetchone()):
+                break # If no authHead found, then generated...
+
+        this.authDb.cursor().execute(f""" INSERT INTO tokens (authHead,authTail,serverScope,id,expiry) VALUES ("{authHead}","{authTail}","{serverScope}",{uid},{expiry})""")
+        this.authDb.commit()
+
+        return [authHead,authTail]
+    ###
 #####
 
 if __name__ == "__main__":
@@ -171,3 +200,8 @@ if __name__ == "__main__":
     temp.userCreate("testUser",None,None)
 
     temp.userCreate("anon2",None,None,uid=10)
+
+
+    # temp.userTokenSpawn(100,"indexServer1") # FAILS, USER FOREIGN KEY ENFORCEMENT
+    # temp.userTokenSpawn(0,"test") # FAILS, SERVER ENFORCEMENT
+    temp.userTokenSpawn(0,"indexServer") # Works, spawns token-based keys from 
