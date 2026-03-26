@@ -1,5 +1,6 @@
 #!/usr/bin/python
 ##### Methods for authHead+Tail token authentication
+# !!!! ALL USER INPUT BEING PASSED TO AUTHSERV MUST BE SANITIZED. DO NOT FORGET.
 import sqlite3 as db # PROTOTYPING DB, DO NOT USE IN PRODUCTION, THE KRAKEN WILL COME
 import os.path as path
 from time import time
@@ -34,7 +35,7 @@ class AuthServ:
             #     );
             #     COMMIT;
             # """)
-            temp.execute("CREATE TABLE users(id BIGINT PRIMARY KEY UNIQUE,email varchar UNIQUE,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
+            temp.execute("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,email varchar,salt varchar,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
             temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id BIGINT REFERENCES users(id),expiry timestamp)")
 
             temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""") # Anonymous user for 'temporary'/unsigned users, only auth tokens allowed, no login thus hash null.
@@ -80,10 +81,36 @@ class AuthServ:
         if testResult == results:
             print("User auth succeeded...")
             this.authDb.cursor().execute(f""" UPDATE users SET last_login = {time()} WHERE id = {uid} """)
+            this.authDb.commit()
             return True
 
         print("User auth failed.")
         return False
+    ###
+
+    def userCreate(this,username,salt,pwdHash,email=None,uid=None): # Assumes password hash was exchanged correctly (secure via pub keys), returns success/fail. Assumes user input sanitized.
+        # id BIGINT PRIMARY KEY UNIQUE,email varchar UNIQUE,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp
+
+        # Validate username:
+        if (this.authDb.cursor().execute(f""" SELECT id FROM users WHERE username = "{username}" """).fetchone()): # if not none, string must have surrounding...
+            print("Username already exists.")
+            return False
+
+        # Validate uid (for testing):
+        if uid and (this.authDb.cursor().execute(f""" SELECT id FROM users WHERE id = {uid} """).fetchone()):
+            print("Uid already exists.")
+            return False
+
+        ## Create user:
+        # this.authDb.cursor().execute(f""" INSERT INTO users  """)
+        if uid: 
+            this.authDb.cursor().execute(f""" INSERT INTO users (id,email,salt,password_hash,username,created_at) VALUES ({uid},"{email}","{salt}","{pwdHash}","{username}",{time()}) """)
+        else:
+            this.authDb.cursor().execute(f""" INSERT INTO users (email,salt,password_hash,username,created_at) VALUES ("{email}","{salt}","{pwdHash}","{username}",{time()}) """)
+
+        this.authDb.commit()
+        return True
+    ###
 #####
 
 if __name__ == "__main__":
@@ -119,3 +146,10 @@ if __name__ == "__main__":
     hash = hashlib.sha256()
     hash.update(("UNHASHED_PASSWORD"+str(testTime)+"test").encode('utf-8')) # Note result of challenges MUST be calculated same way...
     temp.userUidAuth(2,testTime,"test",hash.hexdigest())
+
+    temp.userCreate("anon",None,None)
+    temp.userCreate("anon",None,None,uid=3)
+
+    temp.userCreate("testUser",None,None)
+
+    temp.userCreate("anon2",None,None,uid=10)
