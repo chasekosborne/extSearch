@@ -8,7 +8,7 @@ import hashlib
 from os import urandom
 
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
-DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds?
+DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds
 
 class AuthServ: 
     # Should maintain pub+priv key pair, pub to distribute to servers, priv to decrypt recieved messages... Same priv key for simplicity, distinguish serverOrigin via signing.
@@ -41,7 +41,7 @@ class AuthServ:
             # """)
             temp.execute("CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,email varchar,salt varchar,password_hash varchar,username varchar UNIQUE,created_at timestamp,last_login timestamp)") # Last login for replay attack prevention 
             temp.execute("CREATE TABLE servers(sid INTEGER PRIMARY KEY AUTOINCREMENT,serverPubKey varchar, serverScope varchar UNIQUE)") # Server registry, should be cleared on init? AT LEAST need to maintain an 'authServer' origin used as indexPage tokens
-            temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id,expiry timestamp, FOREIGN KEY (serverScope) REFERENCES servers(serverScope), FOREIGN KEY (id) REFERENCES users(id) )")
+            temp.execute("CREATE TABLE tokens(authHead varchar UNIQUE,authTail varchar UNIQUE,serverScope,id,expiry timestamp,lastCalled timestamp, FOREIGN KEY (serverScope) REFERENCES servers(serverScope), FOREIGN KEY (id) REFERENCES users(id) )")
 
             temp.execute(f"""INSERT INTO users (id,username,created_at) VALUES (0,"anonymous",{time()})""") # Anonymous user for 'temporary'/unsigned users, only auth tokens allowed, no login thus hash null.
             # temp.execute("""INSERT INTO users (id,email,username) VALUES (0,"none@none.com","admin")""")
@@ -154,6 +154,36 @@ class AuthServ:
 
         return [authHead,authTail]
     ###
+
+    def tokenAuth(this,authHead,sourceServer,timestamps,challenges,results,timeRecieveds=time()): # MUST be used in secure connection. Return false or authTail
+        target = this.authDb.cursor().execute(f""" SELECT (authTail,serverScope,expiry,lastCalled) FROM tokens WHERE authHead = "{authHead}" """).fetchone()
+        # If authHead exists
+        if not target:
+            print("No such token exists.")
+            return False
+
+        # scope matches
+        if sourceServer != target[1]:
+            print("Scope fail.")
+            return False
+
+        # Timestamp resolves
+        if abs(timestamps - timeRecieveds) >= CHALLENGE_AUTH_TIME_SYNC_RANGE or timeRecieveds >= target[2]: # Ie. if timestamp out of range of recieve time OR recieved AFTER token expiry.
+            print("Timestamp fail or token expired.")
+            return False
+
+        # Challange check
+        hash = hashlib.sha256()
+        hash.update((str(authHead)+str(target[0])+str(timestamps)+str(challenges)).encode('utf-8')) # head AND tail used for challenge...
+        testResult = hash.hexdigest()
+
+        if testResult == results:
+            print("Token auth success.")
+            return target[0]
+
+        print("Token tail mismatch")
+        return False
+    ###
 #####
 
 if __name__ == "__main__":
@@ -204,4 +234,6 @@ if __name__ == "__main__":
 
     # temp.userTokenSpawn(100,"indexServer1") # FAILS, USER FOREIGN KEY ENFORCEMENT
     # temp.userTokenSpawn(0,"test") # FAILS, SERVER ENFORCEMENT
-    temp.userTokenSpawn(0,"indexServer") # Works, spawns token-based keys from 
+    testFull = temp.userTokenSpawn(0,"indexServer") # Works, spawns token-based keys from 
+
+    # ... (Test api access)
