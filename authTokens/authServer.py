@@ -8,7 +8,18 @@ import hashlib
 from os import urandom
 
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
-DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds
+DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds, 24h expirt
+
+def hashCompute(*args): # Testing hash? Must be same for both client and server
+    netString = ""
+    for each in args:
+        netString += str(each)
+
+    netString = netString.encode('utf-8')
+    hash = hashlib.sha256()
+    hash.update(netString)
+
+    return hash.hexdigest()
 
 class AuthServ: 
     # Should maintain pub+priv key pair, pub to distribute to servers, priv to decrypt recieved messages... Same priv key for simplicity, distinguish serverOrigin via signing.
@@ -79,12 +90,14 @@ class AuthServ:
 
         # Check challenge string, avoid saving intermediate values to variables...
         # (str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8')
-        print((str(userFetch[0])+str(timestamps)+str(challenges)))
-        # hashed = hashlib.sha256().update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
-        # print(hashed)
-        hash = hashlib.sha256()
-        hash.update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
-        testResult = hash.hexdigest()
+        # print((str(userFetch[0])+str(timestamps)+str(challenges)))
+        # # hashed = hashlib.sha256().update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
+        # # print(hashed)
+        # hash = hashlib.sha256()
+        # hash.update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
+        # testResult = hash.hexdigest()
+
+        testResult = hashCompute(userFetch[0],timestamps,challenges)
         print(testResult)
 
         if testResult == results:
@@ -173,9 +186,11 @@ class AuthServ:
             return False
 
         # Challange check
-        hash = hashlib.sha256()
-        hash.update((str(authHead)+str(target[0])+str(timestamps)+str(challenges)).encode('utf-8')) # head AND tail used for challenge...
-        testResult = hash.hexdigest()
+        # hash = hashlib.sha256()
+        # hash.update((str(authHead)+str(target[0])+str(timestamps)+str(challenges)).encode('utf-8')) # head AND tail used for challenge...
+        # testResult = hash.hexdigest()
+
+        testResult = hashCompute(authHead,target[0],timestamps,challenges)
 
         if testResult == results:
             print("Token auth success.")
