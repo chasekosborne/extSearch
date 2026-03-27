@@ -5,6 +5,8 @@ from flask import jsonify, request, session
 
 from clients.fit import fit_bp
 from clients.fit.db.fit_cases import build_explore_groups, get_optimal_n
+
+# Change to use dynamic import if we want to support multiple handlers in the future
 from clients.fit.db.submissions import (
     create_fit_submission,
     get_available_square_counts,

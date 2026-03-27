@@ -1,5 +1,6 @@
 from flask import render_template, request
 
+from client_template.db.submissions import _get_handler
 from clients.fit import fit_bp
 from clients.fit.db.fit_cases import build_explore_groups, get_optimal_n
 from clients.fit.db.submissions import (
@@ -11,6 +12,10 @@ from shared.users import enrich_submissions_with_usernames
 
 CHIP_BATCH = 50
 
+@fit_bp.route("/AF")
+def AF():
+    print(_get_handler("square"))
+    return "a"
 
 @fit_bp.route("/fit")
 def game():
