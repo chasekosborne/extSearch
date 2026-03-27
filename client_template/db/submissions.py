@@ -1,13 +1,18 @@
-from shared.db import get_cursor
+from importlib import import_module
 
 
-def create_submission(user_id, payload):
-    raise NotImplementedError("Implement create_submission for your problem.")
+SQUARE = "square"
+RECTANGLE = "rectangle"
+
+SQUARE_HANDLER_MODULE = "../../clients/fit/db/submissions.py"
 
 
-def get_submission(submission_id):
-    raise NotImplementedError("Implement get_submission for your problem.")
-
-
-def validate_submission(submission_id):
-    raise NotImplementedError("Implement validate_submission for your problem.")
+def _load_handler(module_path):
+    module = import_module(module_path)
+    required = ("get_submission_squares",)
+    for name in required:
+        if not hasattr(module, name):
+            raise AttributeError(
+                f"Handler module '{module_path}' is missing required function '{name}'."
+            )
+    return module

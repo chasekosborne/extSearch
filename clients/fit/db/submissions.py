@@ -199,6 +199,7 @@ def _pre_validate(square_data_list):
 
 # Returns (submission_id, None) or (None, error)
 def create_fit_submission(user_id, squares_payload):
+    print("Created Submission for squares")
     if not squares_payload:
         return None, "No squares to submit."
     instance_id, quant_scale = get_or_create_fit_instance()
