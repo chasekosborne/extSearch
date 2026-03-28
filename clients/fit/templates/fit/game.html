@@ -33,6 +33,24 @@ Fit
         <span class="toolbar-minimize-btn-text">Minimize</span>
     </button>
 
+    {% if initial_variant == 'rectangle' %}
+        <div class="bar-group bar-group-rectangle" id="rectangle-size-controls" aria-label="Rectangle size controls">
+            <span class="bar-group-label" aria-hidden="true">Rectangle</span>
+            <div class="rectangle-size-controls">
+                <label class="rectangle-size-row" for="rectangle-width">
+                    <span class="rectangle-size-label">Width</span>
+                    <input type="number" id="rectangle-width" class="snap-size-input" value="1" min="0.0001" step="0.0001" aria-label="Rectangle width">
+                </label>
+                <label class="rectangle-size-row" for="rectangle-height">
+                    <span class="rectangle-size-label">Height</span>
+                    <input type="number" id="rectangle-height" class="snap-size-input" value="1" min="0.0001" step="0.0001" aria-label="Rectangle height">
+                </label>
+            </div>
+        </div>
+
+        <div class="bar-sep" aria-hidden="true"></div>
+    {% endif %}
+
     <div class="bottom-bar-inner">
         <div class="bar-group bar-group-add">
             <div class="source-square" id="source" title="Drag to board to add a square">
@@ -48,7 +66,7 @@ Fit
             <span class="bar-group-label" aria-hidden="true">Stats</span>
             <div class="stats">
                 <div class="stat-row">
-                    <span class="stat-label">Squares</span>
+                    <span class="stat-label" id="stat-label-count">Shapes</span>
                     <span id="stat-count">0</span>
                 </div>
                 <div class="stat-row stat-row-vertical">
@@ -61,6 +79,8 @@ Fit
         </div>
 
         <div class="bar-sep" aria-hidden="true"></div>
+
+
 
         <div class="bar-group bar-group-snap">
             <span class="bar-group-label" aria-hidden="true">Snap</span>
@@ -155,10 +175,10 @@ Fit
 <div class="submit-rules" id="submit-rules">
     <div class="submit-rules-title">Submission requirements</div>
     <ul class="submit-rules-list">
-        <li id="rule-min" class="rule-fail">Place at least 11 squares</li>
-        <li id="rule-optimal" class="rule-pass">Square count must not be a known optimal</li>
+        <li id="rule-min" class="rule-fail">Place at least 11 shapes</li>
+        <li id="rule-optimal" class="rule-pass">Shape count must not be a known optimal</li>
         <li id="rule-unique" class="rule-pass">Exact duplicate solutions are rejected</li>
-        <li id="rule-overlap" class="rule-pass">Squares must not overlap</li>
+        <li id="rule-overlap" class="rule-pass">Placed shapes must not overlap</li>
     </ul>
 </div>
 
@@ -179,6 +199,7 @@ Fit
 <script>
 window.FIT_OPTIMAL_N = new Set({{ optimal_n | tojson }});
 window.FIT_USER_LOGGED_IN = {{ 'true' if current_user_id else 'false' }};
+window.FIT_VARIANT = {{ initial_variant | default('square') | tojson }};
 </script>
 <script src="{{ url_for('fit.static', filename='scripts/fit-constants.js') }}"></script>
 <script src="{{ url_for('fit.static', filename='scripts/fit-geometry.js') }}"></script>

@@ -33,14 +33,18 @@ function fitCopySquare() {
 function fitPasteSquare() {
   if (!clipboard) return;
   const boardSize = getBoardSize();
+  const shapeWidth = getShapeWidthPx(clipboard);
+  const shapeHeight = getShapeHeightPx(clipboard);
   let x = snapPos(clipboard.x + 20);
   let y = snapPos(clipboard.y + 20);
-  x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
-  y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+  x = Math.max(0, Math.min(x, boardSize.width - shapeWidth));
+  y = Math.max(0, Math.min(y, boardSize.height - shapeHeight));
   const newSquare = {
     id: 'sq-' + (++idCounter),
     x: x,
     y: y,
+    width: shapeWidth,
+    height: shapeHeight,
     rotation: clipboard.rotation,
     mode: clipboard.mode || 'move'
   };
@@ -64,7 +68,14 @@ function onPointerDown(e) {
   const isBoard = e.target.closest('#board') && !target && !isPopup;
 
   if (isSource) {
-    dragState = { type: 'create', startX: e.clientX, startY: e.clientY };
+    var shapeSize = getCurrentShapeSizePx();
+    dragState = {
+      type: 'create',
+      startX: e.clientX,
+      startY: e.clientY,
+      createWidth: shapeSize.width,
+      createHeight: shapeSize.height
+    };
     ghost.style.display = 'block';
     ghost.style.left = (e.clientX - SQUARE_SIZE / 2) + 'px';
     ghost.style.top = (e.clientY - SQUARE_SIZE / 2) + 'px';
@@ -99,8 +110,8 @@ function onPointerDown(e) {
 
     if (sq.mode === 'rotate') {
       const pt = clientToBoard(e.clientX, e.clientY);
-      const centerX = sq.x + SQUARE_SIZE / 2;
-      const centerY = sq.y + SQUARE_SIZE / 2;
+      const centerX = sq.x + getShapeWidthPx(sq) / 2;
+      const centerY = sq.y + getShapeHeightPx(sq) / 2;
       const startAngle = Math.atan2(pt.y - centerY, pt.x - centerX);
       dragState = {
         type: 'rotate',
@@ -139,22 +150,23 @@ function onPointerMove(e) {
   } else if (dragState.type === 'move') {
     const pt = clientToBoard(e.clientX, e.clientY);
     const boardSize = getBoardSize();
+    const sq = squares.find(function(s) { return s.id === dragState.id; });
+    if (!sq) return;
+    const shapeWidth = getShapeWidthPx(sq);
+    const shapeHeight = getShapeHeightPx(sq);
     let x = snapPos(pt.x - dragState.offsetX);
     let y = snapPos(pt.y - dragState.offsetY);
 
-    x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
-    y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+    x = Math.max(0, Math.min(x, boardSize.width - shapeWidth));
+    y = Math.max(0, Math.min(y, boardSize.height - shapeHeight));
 
     // Check for collisions before updating
-    const sq = squares.find(function(s) { return s.id === dragState.id; });
-    if (sq) {
-      const testSq = { x: x, y: y, rotation: sq.rotation };
-      if (!wouldCollide(testSq, dragState.id)) {
-        updateSquare(dragState.id, { x: x, y: y });
-      } else { // use Separating Axis Theorem to move sqaures flush
-        updateSq = flushSquares(testSq, dragState.id);
-        updateSquare(dragState.id, { x: updateSq.x, y: updateSq.y });
-      }
+    const testSq = { x: x, y: y, width: shapeWidth, height: shapeHeight, rotation: sq.rotation };
+    if (!wouldCollide(testSq, dragState.id)) {
+      updateSquare(dragState.id, { x: x, y: y });
+    } else { // use Separating Axis Theorem to move sqaures flush
+      updateSq = flushSquares(testSq, dragState.id);
+      updateSquare(dragState.id, { x: updateSq.x, y: updateSq.y });
     }
 
     if (isInDeleteZone(e.clientX, e.clientY)) {
@@ -167,8 +179,8 @@ function onPointerMove(e) {
     const sq = squares.find(function(s) { return s.id === dragState.id; });
     if (!sq) return;
 
-    const centerX = sq.x + SQUARE_SIZE / 2;
-    const centerY = sq.y + SQUARE_SIZE / 2;
+    const centerX = sq.x + getShapeWidthPx(sq) / 2;
+    const centerY = sq.y + getShapeHeightPx(sq) / 2;
     const currentAngle = Math.atan2(pt.y - centerY, pt.x - centerX);
 
     const angleDiff = currentAngle - dragState.startAngle;
@@ -180,7 +192,13 @@ function onPointerMove(e) {
     newRotation = ((newRotation % 360) + 360) % 360;
 
     // Check for collisions before updating
-    const testSq = { x: sq.x, y: sq.y, rotation: newRotation };
+    const testSq = {
+      x: sq.x,
+      y: sq.y,
+      width: getShapeWidthPx(sq),
+      height: getShapeHeightPx(sq),
+      rotation: newRotation
+    };
     if (!wouldCollide(testSq, dragState.id)) {
       updateSquare(dragState.id, { rotation: newRotation });
     }
@@ -305,7 +323,12 @@ function onPointerUp(e) {
 
     if (isInsideBoardViewport(e.clientX, e.clientY)) {
       const pt = clientToBoard(e.clientX, e.clientY);
-      addSquare(pt.x - SQUARE_SIZE / 2, pt.y - SQUARE_SIZE / 2);
+      addSquare(
+        pt.x - dragState.createWidth / 2,
+        pt.y - dragState.createHeight / 2,
+        dragState.createWidth,
+        dragState.createHeight
+      );
     }
   } else if (dragState.type === 'move') {
     if (isInDeleteZone(e.clientX, e.clientY)) {
@@ -357,6 +380,28 @@ function onWheel(e) {
   zoom = newZoom;
   applyTransform();
 }
+
+function isSquare(p) {
+    if (p.length !== 4) return false;
+
+    const d = [];
+    for (let i = 0; i < p.length; i++) {
+        for (let j = i + 1; j < p.length; j++) {
+            const dx = p[i].x - p[j].x;
+            const dy = p[i].y - p[j].y;
+            d.push(dx * dx + dy * dy);
+        }
+    }
+
+    d.sort((a, b) => a - b);
+
+    const isClose = (a, b) => Math.abs(a - b) < 1e-5;
+
+    return d[0] > 0 && 
+           isClose(d[0], d[3]) && 
+           isClose(d[4], d[5]) && 
+           isClose(d[4], d[0] * 2);
+} 
 
 /* Event listener bindings */
 boardZoomContainer.addEventListener('wheel', onWheel, { passive: false });
@@ -433,12 +478,12 @@ submitBtn.addEventListener('click', async () => {
   for (let sq of squares) {
     data.push(roundCornersForSubmit(getSquareCorners(sq)));
   }
-  if (data.length < MIN_SQUARES) {
-    showToast('Place at least ' + MIN_SQUARES + ' squares to submit.', 'error');
+  if (FIT_VARIANT === 'square' && data.length < MIN_SQUARES) {
+    showToast('Place at least ' + MIN_SQUARES + ' ' + FIT_SHAPE_PLURAL + ' to submit.', 'error');
     return;
   }
   if (window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(data.length)) {
-    showToast('Solutions for ' + data.length + ' squares are already known optimal.', 'error');
+    showToast('Solutions for ' + data.length + ' ' + fitShapeWord(data.length) + ' are already known optimal.', 'error');
     return;
   }
   submitBtn.disabled = true;
@@ -448,7 +493,10 @@ submitBtn.addEventListener('click', async () => {
     const res = await fetch('/api/fit/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ squares: data })
+       body: JSON.stringify({
+         variant: (window.FIT_VARIANT || 'square'),
+         squares: data
+       })
     });
     if (res.ok) {
       const result = await res.json().catch(() => ({}));

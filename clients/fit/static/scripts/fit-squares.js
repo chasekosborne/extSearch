@@ -4,15 +4,16 @@
  */
 
 var MIN_SQUARES = 11;
+var MIN_REQUIRED = FIT_VARIANT === 'rectangle' ? 1 : MIN_SQUARES;
 
 function updateSubmitButtonState() {
   var n = squares.length;
   var isOptimal = window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(n);
-  var tooFew = n < MIN_SQUARES;
+  var tooFew = n < MIN_REQUIRED;
 
   var reason = '';
   if (n === 0) reason = '';
-  else if (tooFew) reason = 'Need ' + (MIN_SQUARES - n) + ' more square' + (MIN_SQUARES - n !== 1 ? 's' : '');
+  else if (tooFew) reason = 'Need ' + (MIN_REQUIRED - n) + ' more ' + fitShapeWord(MIN_REQUIRED - n);
   else if (isOptimal) reason = 'Known optimal';
 
   var canSubmit = n > 0 && !tooFew && !isOptimal;
@@ -28,14 +29,23 @@ function updateSubmitButtonState() {
 function updateSubmitRulesPanel(n, isOptimal) {
   var ruleMin = document.getElementById('rule-min');
   var ruleOptimal = document.getElementById('rule-optimal');
+  var statLabelCount = document.getElementById('stat-label-count');
   if (!ruleMin) return;
 
-  var minOk = n >= MIN_SQUARES;
+  if (statLabelCount) {
+    statLabelCount.textContent = FIT_SHAPE_PLURAL.charAt(0).toUpperCase() + FIT_SHAPE_PLURAL.slice(1);
+  }
+
+  var minOk = n >= MIN_REQUIRED;
   ruleMin.className = minOk ? 'rule-pass' : 'rule-fail';
-  ruleMin.textContent = minOk ? (n + ' squares placed') : ('Place at least ' + MIN_SQUARES + ' squares (' + n + ' now)');
+  ruleMin.textContent = minOk
+    ? (n + ' ' + fitShapeWord(n) + ' placed')
+    : ('Place at least ' + MIN_REQUIRED + ' ' + FIT_SHAPE_PLURAL + ' (' + n + ' now)');
 
   ruleOptimal.className = (n > 0 && isOptimal) ? 'rule-fail' : 'rule-pass';
-  ruleOptimal.textContent = (n > 0 && isOptimal) ? (n + ' squares is a known optimal, not accepted') : 'Square count is not a known optimal';
+  ruleOptimal.textContent = (n > 0 && isOptimal)
+    ? (n + ' ' + fitShapeWord(n) + ' is a known optimal, not accepted')
+    : (FIT_SHAPE_SINGULAR.charAt(0).toUpperCase() + FIT_SHAPE_SINGULAR.slice(1) + ' count is not a known optimal');
 }
 
 function updateStats() {
@@ -61,28 +71,35 @@ function updateStats() {
     maxY = Math.max(maxY, bounds.maxY);
   });
 
-  const maxSideRaw = Math.max((maxX - minX) / SQUARE_SIZE, (maxY - minY) / SQUARE_SIZE);
-  const maxSide = roundDecimal(maxSideRaw, 5);  /* hundred-thousands place to match manual precision */
+  const widthRaw = (maxX - minX) / SQUARE_SIZE;
+  const heightRaw = (maxY - minY) / SQUARE_SIZE;
+  const widthVal = roundDecimal(widthRaw, 5);
+  const heightVal = roundDecimal(heightRaw, 5);
 
   const precision = isExpanded ? 5 : 2;
-  const maxSideStr = maxSide.toFixed(precision).replace(/\.?0+$/, '');
+  const widthStr = widthVal.toFixed(precision).replace(/\.?0+$/, '');
+  const heightStr = heightVal.toFixed(precision).replace(/\.?0+$/, '');
 
-  statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
+  statBounds.textContent = widthStr + ' × ' + heightStr;
 
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
-  const squareSize = maxSide * SQUARE_SIZE;
-  const halfSize = squareSize / 2;
+  const boundsWidth = maxX - minX;
+  const boundsHeight = maxY - minY;
+  const halfWidth = boundsWidth / 2;
+  const halfHeight = boundsHeight / 2;
 
   boundingBox.style.display = 'block';
-  boundingBox.style.left = (centerX - halfSize) * zoom + 'px';
-  boundingBox.style.top = (centerY - halfSize) * zoom + 'px';
-  boundingBox.style.width = squareSize * zoom + 'px';
-  boundingBox.style.height = squareSize * zoom + 'px';
+  boundingBox.style.left = (centerX - halfWidth) * zoom + 'px';
+  boundingBox.style.top = (centerY - halfHeight) * zoom + 'px';
+  boundingBox.style.width = boundsWidth * zoom + 'px';
+  boundingBox.style.height = boundsHeight * zoom + 'px';
 }
 
 function createSquareEl(sq) {
   const el = document.createElement('div');
+  const width = getShapeWidthPx(sq);
+  const height = getShapeHeightPx(sq);
   let className = 'square';
   if (sq.mode === 'rotate') {
     className += ' mode-rotate';
@@ -91,20 +108,24 @@ function createSquareEl(sq) {
   el.dataset.id = sq.id;
   el.style.left = sq.x * zoom + 'px';
   el.style.top = sq.y * zoom + 'px';
-  el.style.width = SQUARE_SIZE * zoom + 'px';
-  el.style.height = SQUARE_SIZE * zoom + 'px';
+  el.style.width = width * zoom + 'px';
+  el.style.height = height * zoom + 'px';
   el.style.transform = 'rotate(' + sq.rotation + 'deg)';
   return el;
 }
 
-function addSquare(x, y) {
+function addSquare(x, y, width, height) {
   const boardSize = getBoardSize();
+  const shapeWidth = Number.isFinite(width) && width > 0 ? width : SQUARE_SIZE;
+  const shapeHeight = Number.isFinite(height) && height > 0 ? height : SQUARE_SIZE;
   x = snapPos(x);
   y = snapPos(y);
   const sq = {
     id: 'sq-' + (++idCounter),
-    x: Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE)),
-    y: Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE)),
+    x: Math.max(0, Math.min(x, boardSize.width - shapeWidth)),
+    y: Math.max(0, Math.min(y, boardSize.height - shapeHeight)),
+    width: shapeWidth,
+    height: shapeHeight,
     rotation: 0,
     mode: 'move'
   };
@@ -146,6 +167,8 @@ function loadSubmissionIntoBoard(submissionId) {
           id: 'sq-' + (++idCounter),
           x: fitSq.x,
           y: fitSq.y,
+          width: SQUARE_SIZE,
+          height: SQUARE_SIZE,
           rotation: fitSq.rotation,
           mode: 'move'
         };
@@ -244,14 +267,16 @@ function updateSquare(id, updates) {
   const sq = squares.find(function(s) { return s.id === id; });
   if (!sq) return;
   Object.assign(sq, updates);
+  const width = getShapeWidthPx(sq);
+  const height = getShapeHeightPx(sq);
 
   const el = board.querySelector('[data-id="' + id + '"]');
   if (!el) return;
 
   el.style.left = sq.x * zoom + 'px';
   el.style.top = sq.y * zoom + 'px';
-  el.style.width = SQUARE_SIZE * zoom + 'px';
-  el.style.height = SQUARE_SIZE * zoom + 'px';
+  el.style.width = width * zoom + 'px';
+  el.style.height = height * zoom + 'px';
   el.style.transform = 'rotate(' + sq.rotation + 'deg)';
 
   // Update classes for all squares to maintain correct state

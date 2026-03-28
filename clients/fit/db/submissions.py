@@ -4,7 +4,7 @@ import math
 
 import psycopg2
 
-from shared.db import get_cursor
+from shared.db import get_cursor 
 
 SQUARE_SIZE = 56
 HALF = SQUARE_SIZE / 2
@@ -16,7 +16,7 @@ UNIT_VEC_TOL = 1e-4
 DIAGONAL_TOL = 0.05
 
 
-# Returns (instance_id, quant_scale), creating the row if needed
+# Returns (instance_id, quant_scale), creating the row if  needed
 def get_or_create_fit_instance():
     with get_cursor() as (conn, cur):
         cur.execute(
@@ -313,6 +313,10 @@ def create_fit_submission(user_id, squares_payload):
             return submission_id, None
     except psycopg2.Error as e:
         return None, str(e)
+
+
+def create_submission(user_id, shapes_payload):
+    return create_fit_submission(user_id, shapes_payload)
 
 
 def get_available_square_counts():

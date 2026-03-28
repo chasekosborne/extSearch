@@ -221,6 +221,28 @@ a {
   margin-left: auto; /* desktop: push Clear & Submit to the right */
 }
 
+.bar-group-rectangle {
+  flex-shrink: 0;
+}
+
+.rectangle-size-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.rectangle-size-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #52525b;
+}
+
+.rectangle-size-label {
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .bar-group-label {
     display: none;
@@ -287,15 +309,15 @@ a {
   background: #f0f2f5;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 2px 6px;
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 11px;
   text-align: left;
   display: inline-flex;
   justify-content: flex-start;
   align-items: center;
-  min-width: 32ch; /* Reserve space for expanded precision so layout doesn't shift */
+  min-width: 18ch; /* Reserve space for expanded precision so layout doesn't shift */
   transition: background 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
 }
@@ -799,9 +821,10 @@ a {
   width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: auto minmax(320px, 1fr) auto auto;
+  grid-template-columns: auto auto auto auto auto;
+  justify-content: center;
   align-items: stretch;
-  gap: 12px;
+  gap: 8px;
   overflow: hidden;
   max-height: 520px;
   opacity: 1;
@@ -838,12 +861,25 @@ a {
 
 .bar-group-stats {
   min-width: 0;
+  width: fit-content;
+  max-width: 280px;
+  justify-self: start;
 }
 
 .stats {
-  width: 100%;
-  justify-content: space-between;
-  gap: 14px;
+  width: auto;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.stat-row {
+  gap: 6px;
+}
+
+.stat-row-vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .bar-group-snap {

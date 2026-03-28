@@ -5,19 +5,22 @@
 
 // Calculate the bounding box of a rotated square
 function getRotatedSquareBounds(sq) {
-  const centerX = sq.x + SQUARE_SIZE / 2;
-  const centerY = sq.y + SQUARE_SIZE / 2;
+  const shapeWidth = getShapeWidthPx(sq);
+  const shapeHeight = getShapeHeightPx(sq);
+  const centerX = sq.x + shapeWidth / 2;
+  const centerY = sq.y + shapeHeight / 2;
   const angle = sq.rotation * Math.PI / 180;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const halfSize = SQUARE_SIZE / 2;
+  const halfWidth = shapeWidth / 2;
+  const halfHeight = shapeHeight / 2;
 
   // Calculate the four corners of the rotated square
   const corners = [
-    { x: -halfSize, y: -halfSize },
-    { x: halfSize, y: -halfSize },
-    { x: halfSize, y: halfSize },
-    { x: -halfSize, y: halfSize }
+    { x: -halfWidth, y: -halfHeight },
+    { x: halfWidth, y: -halfHeight },
+    { x: halfWidth, y: halfHeight },
+    { x: -halfWidth, y: halfHeight }
   ].map(corner => ({
     x: centerX + corner.x * cos - corner.y * sin,
     y: centerY + corner.x * sin + corner.y * cos
@@ -39,26 +42,31 @@ function getRotatedSquareBounds(sq) {
 
 // Get the four corners of a rotated square
 function getSquareCorners(sq) {
-  const centerX = sq.x + SQUARE_SIZE / 2;
-  const centerY = sq.y + SQUARE_SIZE / 2;
+  const shapeWidth = getShapeWidthPx(sq);
+  const shapeHeight = getShapeHeightPx(sq);
+  const centerX = sq.x + shapeWidth / 2;
+  const centerY = sq.y + shapeHeight / 2;
   const angle = sq.rotation * Math.PI / 180;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const halfSize = SQUARE_SIZE / 2;
+  const halfWidth = shapeWidth / 2;
+  const halfHeight = shapeHeight / 2;
 
   return [
-    { x: centerX + (-halfSize) * cos - (-halfSize) * sin, y: centerY + (-halfSize) * sin + (-halfSize) * cos },
-    { x: centerX + halfSize * cos - (-halfSize) * sin, y: centerY + halfSize * sin + (-halfSize) * cos },
-    { x: centerX + halfSize * cos - halfSize * sin, y: centerY + halfSize * sin + halfSize * cos },
-    { x: centerX + (-halfSize) * cos - halfSize * sin, y: centerY + (-halfSize) * sin + halfSize * cos }
+    { x: centerX + (-halfWidth) * cos - (-halfHeight) * sin, y: centerY + (-halfWidth) * sin + (-halfHeight) * cos },
+    { x: centerX + halfWidth * cos - (-halfHeight) * sin, y: centerY + halfWidth * sin + (-halfHeight) * cos },
+    { x: centerX + halfWidth * cos - halfHeight * sin, y: centerY + halfWidth * sin + halfHeight * cos },
+    { x: centerX + (-halfWidth) * cos - halfHeight * sin, y: centerY + (-halfWidth) * sin + halfHeight * cos }
   ];
 }
 
 // Check if a point is inside a rotated square
 function pointInRotatedSquare(point, sq) {
   const corners = getSquareCorners(sq);
-  const centerX = sq.x + SQUARE_SIZE / 2;
-  const centerY = sq.y + SQUARE_SIZE / 2;
+  const shapeWidth = getShapeWidthPx(sq);
+  const shapeHeight = getShapeHeightPx(sq);
+  const centerX = sq.x + shapeWidth / 2;
+  const centerY = sq.y + shapeHeight / 2;
   const angle = -sq.rotation * Math.PI / 180; // Reverse rotation
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
@@ -69,8 +77,9 @@ function pointInRotatedSquare(point, sq) {
   const localX = dx * cos - dy * sin;
   const localY = dx * sin + dy * cos;
 
-  const halfSize = SQUARE_SIZE / 2;
-  return Math.abs(localX) <= halfSize && Math.abs(localY) <= halfSize;
+  const halfWidth = shapeWidth / 2;
+  const halfHeight = shapeHeight / 2;
+  return Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight;
 }
 
 // Check if two rotated squares overlap using SAT (Separating Axis Theorem)
@@ -103,12 +112,13 @@ function squaresOverlap(sq1, sq2) {
   }
 
   // Check if edges intersect (simplified: check if squares are very close)
-  const center1 = { x: sq1.x + SQUARE_SIZE / 2, y: sq1.y + SQUARE_SIZE / 2 };
-  const center2 = { x: sq2.x + SQUARE_SIZE / 2, y: sq2.y + SQUARE_SIZE / 2 };
+  const center1 = { x: sq1.x + getShapeWidthPx(sq1) / 2, y: sq1.y + getShapeHeightPx(sq1) / 2 };
+  const center2 = { x: sq2.x + getShapeWidthPx(sq2) / 2, y: sq2.y + getShapeHeightPx(sq2) / 2 };
   const dist = Math.sqrt(Math.pow(center1.x - center2.x, 2) + Math.pow(center1.y - center2.y, 2));
 
-  const diagonal = SQUARE_SIZE * Math.sqrt(2);
-  if (dist < diagonal) {
+  const radius1 = Math.hypot(getShapeWidthPx(sq1) / 2, getShapeHeightPx(sq1) / 2);
+  const radius2 = Math.hypot(getShapeWidthPx(sq2) / 2, getShapeHeightPx(sq2) / 2);
+  if (dist < (radius1 + radius2)) {
     const edges1 = [
       [corners1[0], corners1[1]],
       [corners1[1], corners1[2]],

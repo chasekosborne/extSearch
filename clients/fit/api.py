@@ -2,13 +2,13 @@ import time
 import threading
 
 from flask import jsonify, request, session
+from client_template.db.submissions import _normalize_variant, create_submission
 
 from clients.fit import fit_bp
 from clients.fit.db.fit_cases import build_explore_groups, get_optimal_n
 
 # Change to use dynamic import if we want to support multiple handlers in the future
 from clients.fit.db.submissions import (
-    create_fit_submission,
     get_available_square_counts,
     get_submission_squares,
 )
@@ -147,10 +147,15 @@ def api_submit():
 
     data = request.get_json() or {}
     squares_payload = data.get("squares")
+
+    variant = _normalize_variant(data)
+    if variant is None:
+        return jsonify(error='Missing or invalid "variant". Expected "square" or "rectangle".'), 400
+
     if not isinstance(squares_payload, list):
         return jsonify(error='Missing or invalid "squares" array.'), 400
     n = len(squares_payload)
-    if n < 11:
+    if variant == "square" and n < 11:
         return jsonify(
             error="At least 11 squares are required. You submitted %d." % n
         ), 422
@@ -159,7 +164,7 @@ def api_submit():
             error="Solutions for %d squares are already known optimal; "
                   "submission not accepted." % n
         ), 422
-    submission_id, err = create_fit_submission(user_id, squares_payload)
+    submission_id, err = create_submission(user_id, squares_payload, variant=variant)
     if err:
         return jsonify(error=err), 422
 

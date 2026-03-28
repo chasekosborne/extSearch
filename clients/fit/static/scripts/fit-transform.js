@@ -57,10 +57,12 @@ function applyTransform() {
   squares.forEach(function (sq) {
     const el = board.querySelector('[data-id="' + sq.id + '"]');
     if (!el) return;
+    const width = getShapeWidthPx(sq);
+    const height = getShapeHeightPx(sq);
     el.style.left = sq.x * zoom + 'px';
     el.style.top = sq.y * zoom + 'px';
-    el.style.width = SQUARE_SIZE * zoom + 'px';
-    el.style.height = SQUARE_SIZE * zoom + 'px';
+    el.style.width = width * zoom + 'px';
+    el.style.height = height * zoom + 'px';
     el.style.transform = 'rotate(' + sq.rotation + 'deg)';
   });
 

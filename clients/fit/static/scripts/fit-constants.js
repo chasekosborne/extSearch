@@ -17,6 +17,17 @@ const squareData = document.getElementById('square-data');
 const submitBtn = document.getElementById('submit-btn');
 const card = document.getElementById('bounds-card');
 
+const FIT_VARIANT = (window.FIT_VARIANT || 'square').toLowerCase();
+const FIT_SHAPE_SINGULAR = FIT_VARIANT === 'rectangle' ? 'rectangle' : 'square';
+const FIT_SHAPE_PLURAL = FIT_VARIANT === 'rectangle' ? 'rectangles' : 'squares';
+
+const rectangleWidthEl = document.getElementById('rectangle-width');
+const rectangleHeightEl = document.getElementById('rectangle-height');
+
+function fitShapeWord(count) {
+  return count === 1 ? FIT_SHAPE_SINGULAR : FIT_SHAPE_PLURAL;
+}
+
 const SQUARE_SIZE = 56;
 const BOARD_SIZE = 10000;
 const BOARD_CENTER = BOARD_SIZE / 2;
@@ -25,6 +36,28 @@ const ZOOM_MAX = 1000;  /* cap to avoid rendering bugs at very high zoom */
 const ZOOM_FACTOR = 1.15;   /* each wheel step multiplies zoom by this (logarithmic) */
 const ZOOM_SENSITIVITY = 0.012;  /* wheel delta multiplier for log zoom */
 const GRID_MAX_RENDER_SIZE = 16384;  /* many browsers drop SVG above ~16k px; cap grid and scale */
+
+function getCurrentShapeSizePx() {
+  if (FIT_VARIANT !== 'rectangle') {
+    return { width: SQUARE_SIZE, height: SQUARE_SIZE };
+  }
+  var widthUnits = rectangleWidthEl ? Number(rectangleWidthEl.value) : 1;
+  var heightUnits = rectangleHeightEl ? Number(rectangleHeightEl.value) : 1;
+  if (!Number.isFinite(widthUnits) || widthUnits <= 0) widthUnits = 1;
+  if (!Number.isFinite(heightUnits) || heightUnits <= 0) heightUnits = 1;
+  return {
+    width: widthUnits * SQUARE_SIZE,
+    height: heightUnits * SQUARE_SIZE
+  };
+}
+
+function getShapeWidthPx(sq) {
+  return sq && Number.isFinite(sq.width) && sq.width > 0 ? sq.width : SQUARE_SIZE;
+}
+
+function getShapeHeightPx(sq) {
+  return sq && Number.isFinite(sq.height) && sq.height > 0 ? sq.height : SQUARE_SIZE;
+}
 
 let squares = [];
 let dragState = null;

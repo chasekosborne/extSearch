@@ -25,11 +25,13 @@ function applySquareDataInputs() {
   }
 
   const boardSize = getBoardSize();
-  const xPx = Math.max(0, Math.min(centerToPixelX(cxVal), boardSize.width - SQUARE_SIZE));
-  const yPx = Math.max(0, Math.min(centerToPixelY(cyVal), boardSize.height - SQUARE_SIZE));
+  const shapeWidth = getShapeWidthPx(sq);
+  const shapeHeight = getShapeHeightPx(sq);
+  const xPx = Math.max(0, Math.min(centerToPixelX(cxVal), boardSize.width - shapeWidth));
+  const yPx = Math.max(0, Math.min(centerToPixelY(cyVal), boardSize.height - shapeHeight));
   let rotation = ((rotVal % 360) + 360) % 360;
   rotation = snapRotation(rotation);
-  const testSq = { x: xPx, y: yPx, rotation: rotation };
+  const testSq = { x: xPx, y: yPx, width: shapeWidth, height: shapeHeight, rotation: rotation };
   if (wouldCollide(testSq, selectedSquareId)) {
     xIn.value = formatSquareUnit(pixelToCenterX(sq.x));
     yIn.value = formatSquareUnit(pixelToCenterY(sq.y));
