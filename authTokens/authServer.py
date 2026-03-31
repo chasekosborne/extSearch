@@ -10,7 +10,9 @@ from os import urandom
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
 DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds, 24h expirt
 
-def hashCompute(*args): # Testing hash? Must be same for both client and server
+# Auth Token: authHead,authTail,timestamp,challenge
+# User Auth: pwdHash,timestamp,challenge
+def hashCompute(*args): # Testing hash? Must be same for both client and server.
     netString = ""
     for each in args:
         netString += str(each)
@@ -132,6 +134,44 @@ class AuthServ:
 
         this.authDb.commit()
         return True
+    ###
+
+    def userDelete(this,uid):
+        if (this.authDb.cursor().execute(f""" SELECT id FROM users WHERE id = {uid} """).fetchone()):
+            this.authDb.cursor().execute(f""" DELETE FROM users WHERE id = {uid} """)
+            this.authDb.commit()
+            return True
+        
+        return False
+    ###
+
+    def userLookup(this,username=None,email=None): # Return uid(s) array
+        if (username): # Note username is unique
+            uid = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE username = {username}""").fetchone()
+            if not uid:
+                return False
+            return [uid]
+
+        if (email): # Note email is NOT NECESSARILY unique, return array
+            search = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE email = {email} """).fetchall()
+
+            if not search:
+                return False
+            return search
+
+        return False
+    ###
+
+    def userInfo(this,uid): # Return info as dictionary by userId...
+        fetch = this.authDb.cursor().execute(f""" SELECT * FROM users WHERE id = {uid} """)
+
+        columns = [description[0] for description in fetch.description]
+        rows = fetch.fetchone() # unique id
+
+        if not rows:
+            return False
+
+        return dict(zip(columns,rows))
     ###
 
     def serverAdd(this,servPubKey,servName):
