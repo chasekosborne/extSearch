@@ -9,6 +9,7 @@ from os import urandom
 
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
 DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds, 24h expirt
+AuthServerInstance = None
 
 # Auth Token: authHead,authTail,timestamp,challenge
 # User Auth: pwdHash,timestamp,challenge
@@ -22,6 +23,11 @@ def hashCompute(*args): # Testing hash? Must be same for both client and server.
     hash.update(netString)
 
     return hash.hexdigest()
+###
+
+def rngGenHash(): # Salt creation, challenge creation
+    return hashCompute(urandom(32))
+###
 
 class AuthServ: 
     # Should maintain pub+priv key pair, pub to distribute to servers, priv to decrypt recieved messages... Same priv key for simplicity, distinguish serverOrigin via signing.
@@ -244,6 +250,56 @@ class AuthServ:
 
         print("Token tail mismatch")
         return False
+    ###
+#####
+
+class AuthInterface: # Flask-facing interface, not sanitized
+    def __init__(this):
+        if AuthServerInstance is None: # Global init, bad 'singleton'
+            AuthServerInstance = AuthServ()
+
+    # User signup flow
+    def signupFirst(this):
+        return {"salt":rngGenHash()}
+
+    def signupSecond(this,first,passwordHash,username,email=None): # Final step of signup process, autologin to index server (tokend)
+        salt = first["salt"]
+
+        if not AuthServerInstance.userCreate(username,salt,passwordHash,email=email):
+            return False # User creation failed.
+
+        # User creation success...
+        targetUid = AuthServerInstance.userLookup(username=username)
+        
+        return AuthServerInstance.userTokenSpawn(targetUid,"indexServer") # Returns [authHead,authTail], no protection...
+    ###
+
+    # User login flow (return indexServer auth token for client)
+    def loginFirst(this,username=None,email=None):
+        targetUid = AuthServerInstance.userLookup(username=username,email=email)
+        if not targetUid:
+            return False # User does not exist.
+
+        userInfo = AuthServerInstance.userInfo(targetUid)
+
+        return {"salt":userInfo["salt"],"challenges":rngGenHash(),"uid":targetUid}
+    ###
+
+    def loginSecond(this,first,timestamps,results): # Salt not strictly needed...
+        # userUidAuth(this,uid,timestamps,challenges,results)
+        authResult = AuthServerInstance.userUidAuth(first["uid"],timestamps,first["challenges"],results)
+
+        if not authResult: # False
+            print("Login failed.")
+            return False
+
+        return AuthServerInstance.userTokenSpawn(first["uid"],"indexServer") # Returns [authHead,authTail], no protection
+    ###
+
+    # Token authentication flow (one-step)
+    def tokenAuth(this,authHead,sourceServer,timestamps,challenges,results,timeRecieveds=time()):
+        # tokenAuth(this,authHead,sourceServer,timestamps,challenges,results,timeRecieveds=time())
+        return AuthServerInstance.tokenAuth(authHead,sourceServer,timestamps,challenges,results,timeRecieveds)
     ###
 #####
 
