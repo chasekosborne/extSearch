@@ -73,11 +73,17 @@ class AuthServ:
 
     def userUidAuth(this,uid,timestamps,challenges,results): # In the future, make many challenges. Treating input as 'safe'
         # UID lookup
-        userFetch = this.authDb.cursor().execute(f""" SELECT password_hash,last_login FROM users WHERE id = {uid}""").fetchone() # No sql injection prevention
-        if userFetch is None:
+        userFetch = this.userInfo(uid)
+        if not userFetch:
             print(userFetch)
-            print("No user found. Not logging in")
+            print("No user found. Not logging in.")
             return False
+
+        # userFetch = this.authDb.cursor().execute(f""" SELECT password_hash,last_login FROM users WHERE id = {uid}""").fetchone() # No sql injection prevention
+        # if userFetch is None:
+        #     print(userFetch)
+        #     print("No user found. Not logging in")
+        #     return False
 
         # Validate timestamp.
         if not isinstance(timestamps,float) or abs(timestamps - time()) >= CHALLENGE_AUTH_TIME_SYNC_RANGE: # Note python processes statements sequentially, ie. early success means math not done on None value...
@@ -85,8 +91,8 @@ class AuthServ:
             print("Timestamp check failed or invalid. Time may be out of sync.")
             return False
 
-        if isinstance(userFetch[1],float) and timestamps <= userFetch[1]: # If lastLogin time exists
-            print(timestamps,userFetch[1])
+        if isinstance(userFetch["last_login"],float) and timestamps <= userFetch["last_login"]: # If lastLogin time exists
+            print(timestamps,userFetch["last_login"])
             print("Timestamp check failed. Attempted replay.")
             return False
 
@@ -99,7 +105,7 @@ class AuthServ:
         # hash.update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
         # testResult = hash.hexdigest()
 
-        testResult = hashCompute(userFetch[0],timestamps,challenges)
+        testResult = hashCompute(userFetch["password_hash"],timestamps,challenges)
         print(testResult)
 
         if testResult == results:
@@ -259,6 +265,7 @@ if __name__ == "__main__":
     for row in temp.authDb.cursor().execute("SELECT * FROM servers"):
         print(row)
 
+    temp.userUidAuth(100000,None,None,None)
     temp.userUidAuth(0,None,None,None)
     temp.userUidAuth(0,time()+16,None,None)
     temp.userUidAuth(0,time()-10,None,None)
