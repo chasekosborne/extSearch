@@ -45,6 +45,23 @@ function pushUndoState() {
   redoStack = [];
 }
 
+// multi-select: when enabled, allow user to click on squares to add to a list of squares to all be moved
+let selectedSquares = []; // array with IDs of squares for multiple select
+let offsets = [];
+let multiEnable = false;
+const multiFlagE1 = document.getElementById('multi-select-toggle');
+
+if (multiFlagE1) {
+  multiFlagE1.addEventListener('change', function() 
+  { 
+    multiEnable = this.checked; 
+    selectedSquareId = null;
+    updateAllSquareClasses();
+    updateSquareDataDisplay();
+    updateStats();
+  });
+}
+
 /* ── Snap-to-grid ── */
 const MIN_SNAP_GRID_SIZE = 0.0001;
 let snapGridSize = 0.1; // in unit-square multiples; position snap always on

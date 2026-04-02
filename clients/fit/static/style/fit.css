@@ -730,7 +730,8 @@ a {
   gap: 8px;
 }
 
-.snap-toggle {
+.snap-toggle,
+.multi-toggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -740,7 +741,8 @@ a {
   user-select: none;
 }
 
-.snap-toggle input[type="checkbox"] {
+.snap-toggle input,
+.multi-toggle input[type="checkbox"] {
   width: 14px;
   height: 14px;
   margin: 0;
