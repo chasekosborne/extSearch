@@ -52,7 +52,7 @@ def explore_solutions():
 
     from_db = get_available_square_counts(variant=variant)
     db_by_n = {r["square_count"]: r["submission_count"] for r in from_db}
-    optimal_counts, found_counts = build_explore_groups(db_by_n)
+    optimal_counts, found_counts = build_explore_groups(db_by_n, variant=variant)
     n = request.args.get("n", type=int)
     page = request.args.get("page", 1, type=int)
     hide_duplicates = request.args.get("hide_duplicates", "1") == "1"

@@ -1,5 +1,6 @@
 import time
 import threading
+import math
 
 from flask import jsonify, request, session
 from client_template.db.submissions import _normalize_variant, create_submission
@@ -52,6 +53,36 @@ def _check_ip_rate(ip: str, is_authenticated: bool) -> tuple[bool, int]:
 
 
 
+def _corners_look_square(corners, side_tol=0.05):
+    if not isinstance(corners, list) or len(corners) != 4:
+        return False
+    try:
+        pts = [(float(p["x"]), float(p["y"])) for p in corners]
+    except (TypeError, ValueError, KeyError):
+        return False
+
+    sides = []
+    for i in range(4):
+        x1, y1 = pts[i]
+        x2, y2 = pts[(i + 1) % 4]
+        sides.append(math.hypot(x2 - x1, y2 - y1))
+
+    return all(abs(s - sides[0]) <= side_tol for s in sides[1:])
+
+
+def _infer_variant_from_payload(default_variant, corners_payload):
+    if default_variant != "square":
+        return default_variant
+    if not isinstance(corners_payload, list) or not corners_payload:
+        return default_variant
+
+    def _shape_corners(shape):
+        if isinstance(shape, dict) and "corners" in shape:
+            return shape.get("corners")
+        return shape
+
+    return "square" if all(_corners_look_square(_shape_corners(c)) for c in corners_payload) else "rectangle"
+
 # Returns (user_id, username) or (None, None)
 def _get_authenticated_user():
     uid = session.get("user_id")
@@ -98,7 +129,7 @@ def api_explore_square_counts():
         offset, limit = 0, CHIP_BATCH
     from_db = get_available_square_counts(variant=variant)
     db_by_n = {r["square_count"]: r["submission_count"] for r in from_db}
-    optimal_counts, found_counts = build_explore_groups(db_by_n)
+    optimal_counts, found_counts = build_explore_groups(db_by_n, variant=variant)
     if group == "optimal":
         items = optimal_counts[offset : offset + limit]
         has_more = len(optimal_counts) > offset + limit
@@ -169,12 +200,13 @@ def api_submit():
 
     if not isinstance(squares_payload, list):
         return jsonify(error='Missing or invalid "squares" array.'), 400
+    variant = _infer_variant_from_payload(variant, squares_payload)
     n = len(squares_payload)
     if variant == "square" and n < 11:
         return jsonify(
             error="At least 11 squares are required. You submitted %d." % n
         ), 422
-    if n in get_optimal_n():
+    if variant == "square" and n in get_optimal_n():
         return jsonify(
             error="Solutions for %d squares are already known optimal; "
                   "submission not accepted." % n
@@ -194,3 +226,6 @@ def _add_rate_headers(resp, rate_info):
     resp.headers["X-RateLimit-Limit"] = str(rate_info["limit"])
     resp.headers["X-RateLimit-Remaining"] = str(rate_info["remaining"])
     resp.headers["X-RateLimit-Window"] = str(rate_info["window_seconds"])
+
+
+

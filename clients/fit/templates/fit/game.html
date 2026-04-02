@@ -176,7 +176,9 @@ Fit
     <div class="submit-rules-title">Submission requirements</div>
     <ul class="submit-rules-list">
         <li id="rule-min" class="rule-fail">Place at least 11 shapes</li>
+        {% if initial_variant == 'square' %}
         <li id="rule-optimal" class="rule-pass">Shape count must not be a known optimal</li>
+        {% endif %}
         <li id="rule-unique" class="rule-pass">Exact duplicate solutions are rejected</li>
         <li id="rule-overlap" class="rule-pass">Placed shapes must not overlap</li>
     </ul>

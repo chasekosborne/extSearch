@@ -20,6 +20,30 @@ SQUARE_CONTAINER = "square"
 RECTANGLE_CONTAINER = "rectangle"
 SQUARES_TABLE = "submission_squares"
 RECTANGLE_SQUARES_TABLE = "submission_rectangle_squares"
+_HAS_DUPLICATE_COLUMNS = None
+
+
+def _submissions_has_duplicate_columns():
+    global _HAS_DUPLICATE_COLUMNS
+    if _HAS_DUPLICATE_COLUMNS is not None:
+        return _HAS_DUPLICATE_COLUMNS
+
+    with get_cursor(commit=False) as (conn, cur):
+        cur.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM pg_catalog.pg_attribute a
+            JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+            WHERE c.relname = 'submissions'
+              AND pg_catalog.pg_table_is_visible(c.oid)
+              AND a.attnum > 0
+              AND NOT a.attisdropped
+              AND a.attname IN ('is_duplicate', 'duplicate_number')
+            """
+        )
+        row = cur.fetchone()
+        _HAS_DUPLICATE_COLUMNS = bool(row and row["cnt"] == 2)
+    return _HAS_DUPLICATE_COLUMNS
 
 
 def ensure_rectangle_submission_table():
@@ -367,6 +391,7 @@ def _create_fit_submission_for_variant(
 
     canonical = json.dumps(squares_payload, sort_keys=True)
     solution_hash = hashlib.sha256(canonical.encode()).digest()
+    has_dup_cols = _submissions_has_duplicate_columns()
     duplicate_count_sql = f"""
         SELECT COUNT(*) AS cnt
         FROM submissions s
@@ -376,26 +401,12 @@ def _create_fit_submission_for_variant(
         GROUP BY s.id
         HAVING COUNT(ss.idx) = %s
     """
-    mark_first_duplicate_sql = f"""
-        UPDATE submissions SET is_duplicate = true, duplicate_number = 1
-        WHERE id = (
-            SELECT s.id FROM submissions s
-            LEFT JOIN {squares_table} ss ON s.id = ss.submission_id
-            WHERE s.instance_id = %s
-              AND s.objective_value = %s
-              AND s.is_duplicate = false
-              AND s.id != %s
-            GROUP BY s.id
-            HAVING COUNT(ss.idx) = %s
-            ORDER BY s.created_at ASC
-            LIMIT 1
-        )
-    """
     insert_shapes_sql = f"""
         INSERT INTO {squares_table}
         (submission_id, idx, cx, cy, ux, uy, cx_q, cy_q, ux_q, uy_q, pinned)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, false)
     """
+
     try:
         with get_cursor() as (conn, cur):
             cur.execute(
@@ -411,24 +422,56 @@ def _create_fit_submission_for_variant(
             is_duplicate = existing_count > 0
             duplicate_number = existing_count + 1 if is_duplicate else None
 
-            cur.execute(
-                """
-                INSERT INTO submissions
-                    (instance_id, user_id, status, objective_value,
-                     solution_hash, is_duplicate, duplicate_number)
-                VALUES (%s, %s, 'pending', %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (instance_id, user_id, objective_value,
-                 psycopg2.Binary(solution_hash),
-                 is_duplicate, duplicate_number),
-            )
+            if has_dup_cols:
+                cur.execute(
+                    """
+                    INSERT INTO submissions
+                        (instance_id, user_id, status, objective_value,
+                         solution_hash, is_duplicate, duplicate_number)
+                    VALUES (%s, %s, 'pending', %s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        instance_id,
+                        user_id,
+                        objective_value,
+                        psycopg2.Binary(solution_hash),
+                        is_duplicate,
+                        duplicate_number,
+                    ),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO submissions
+                        (instance_id, user_id, status, objective_value, solution_hash)
+                    VALUES (%s, %s, 'pending', %s, %s)
+                    RETURNING id
+                    """,
+                    (instance_id, user_id, objective_value, psycopg2.Binary(solution_hash)),
+                )
+
             row = cur.fetchone()
             if not row:
                 return None, "Failed to create submission."
             submission_id = row["id"]
 
-            if is_duplicate and existing_count == 1:
+            if has_dup_cols and is_duplicate and existing_count == 1:
+                mark_first_duplicate_sql = f"""
+                    UPDATE submissions SET is_duplicate = true, duplicate_number = 1
+                    WHERE id = (
+                        SELECT s.id FROM submissions s
+                        LEFT JOIN {squares_table} ss ON s.id = ss.submission_id
+                        WHERE s.instance_id = %s
+                          AND s.objective_value = %s
+                          AND s.is_duplicate = false
+                          AND s.id != %s
+                        GROUP BY s.id
+                        HAVING COUNT(ss.idx) = %s
+                        ORDER BY s.created_at ASC
+                        LIMIT 1
+                    )
+                """
                 cur.execute(
                     mark_first_duplicate_sql,
                     (instance_id, objective_value, submission_id, n_squares),
@@ -437,9 +480,18 @@ def _create_fit_submission_for_variant(
             for sd in square_data_list:
                 cur.execute(
                     insert_shapes_sql,
-                    (submission_id, sd["idx"], sd["cx"], sd["cy"],
-                     sd["ux"], sd["uy"], sd["cx_q"], sd["cy_q"],
-                     sd["ux_q"], sd["uy_q"]),
+                    (
+                        submission_id,
+                        sd["idx"],
+                        sd["cx"],
+                        sd["cy"],
+                        sd["ux"],
+                        sd["uy"],
+                        sd["cx_q"],
+                        sd["cy_q"],
+                        sd["ux_q"],
+                        sd["uy_q"],
+                    ),
                 )
             return submission_id, None
     except psycopg2.Error as e:
@@ -447,7 +499,10 @@ def _create_fit_submission_for_variant(
 
 
 # Returns (submission_id, None) or (None, error)
-def create_fit_submission(user_id, squares_payload):
+def create_fit_submission(user_id, squares_payload, variant="square"):
+    variant = (variant or "square").strip().lower()
+    if variant == "rectangle":
+        return create_rectangle_submission(user_id, squares_payload)
     return _create_fit_submission_for_variant(
         user_id,
         squares_payload,
@@ -499,7 +554,18 @@ def get_available_square_counts(variant="square"):
 def get_best_submissions(square_count, page=1, per_page=50, hide_duplicates=False, variant="square"):
     container_type, squares_table = _resolve_variant_tables(variant)
     offset = (page - 1) * per_page
-    dup_filter = "AND (s.is_duplicate = false OR s.duplicate_number = 1)" if hide_duplicates else ""
+    has_dup_cols = _submissions_has_duplicate_columns()
+    dup_filter = (
+        "AND (s.is_duplicate = false OR s.duplicate_number = 1)"
+        if (hide_duplicates and has_dup_cols)
+        else ""
+    )
+    select_dup_cols = (
+        "s.is_duplicate, s.duplicate_number"
+        if has_dup_cols
+        else "false AS is_duplicate, NULL::integer AS duplicate_number"
+    )
+    group_dup_cols = ", s.is_duplicate, s.duplicate_number" if has_dup_cols else ""
 
     with get_cursor() as (conn, cur):
         cur.execute(
@@ -524,9 +590,9 @@ def get_best_submissions(square_count, page=1, per_page=50, hide_duplicates=Fals
 
         cur.execute(
             f"""
-            SELECT s.id, s.user_id, s.status, s.objective_value, s.min_slack,
-                   s.created_at, s.is_duplicate, s.duplicate_number,
-                   COUNT(ss.idx) AS square_count
+                        SELECT s.id, s.user_id, s.status, s.objective_value, s.min_slack,
+                                     s.created_at, {select_dup_cols},
+                                     COUNT(ss.idx) AS square_count
             FROM submissions s
             JOIN problem_instances pi ON s.instance_id = pi.id
                         LEFT JOIN {squares_table} ss ON s.id = ss.submission_id
@@ -535,7 +601,7 @@ def get_best_submissions(square_count, page=1, per_page=50, hide_duplicates=Fals
               AND s.status = 'valid'
               {dup_filter}
             GROUP BY s.id, s.user_id, s.status, s.objective_value, s.min_slack,
-                     s.created_at, s.is_duplicate, s.duplicate_number
+                     s.created_at{group_dup_cols}
             HAVING COUNT(ss.idx) = %s
             ORDER BY s.objective_value ASC NULLS LAST, s.created_at ASC
             LIMIT %s OFFSET %s
@@ -548,6 +614,8 @@ def get_best_submissions(square_count, page=1, per_page=50, hide_duplicates=Fals
 # IDs of top N valid submissions with distinct bounds (for medals)
 def get_top_valid_ids(square_count, limit=3, variant="square"):
     container_type, squares_table = _resolve_variant_tables(variant)
+    has_dup_cols = _submissions_has_duplicate_columns()
+    dup_filter = "AND (s.is_duplicate = false OR s.duplicate_number = 1)" if has_dup_cols else ""
     with get_cursor() as (conn, cur):
         cur.execute(
             f"""
@@ -558,7 +626,7 @@ def get_top_valid_ids(square_count, limit=3, variant="square"):
             WHERE pi.domain = 'square_packing_rotatable'
               AND pi.container_type = %s
               AND s.status = 'valid'
-              AND (s.is_duplicate = false OR s.duplicate_number = 1)
+              {dup_filter}
             GROUP BY s.id, s.objective_value, s.created_at
             HAVING COUNT(ss.idx) = %s
             ORDER BY s.objective_value ASC NULLS LAST, s.created_at ASC
@@ -652,6 +720,7 @@ def create_rectangle_submission(user_id, squares_payload):
     solution_hash = hashlib.sha256(
         json.dumps(canonical_payload, sort_keys=True).encode()
     ).digest()
+    has_dup_cols = _submissions_has_duplicate_columns()
 
     duplicate_count_sql = f"""
         SELECT COUNT(*) AS cnt
@@ -662,22 +731,6 @@ def create_rectangle_submission(user_id, squares_payload):
         GROUP BY s.id
         HAVING COUNT(ss.idx) = %s
     """
-    mark_first_duplicate_sql = f"""
-        UPDATE submissions SET is_duplicate = true, duplicate_number = 1
-        WHERE id = (
-            SELECT s.id FROM submissions s
-            LEFT JOIN {RECTANGLE_SQUARES_TABLE} ss ON s.id = ss.submission_id
-            WHERE s.instance_id = %s
-              AND s.objective_value = %s
-              AND s.is_duplicate = false
-              AND s.id != %s
-            GROUP BY s.id
-            HAVING COUNT(ss.idx) = %s
-            ORDER BY s.created_at ASC
-            LIMIT 1
-        )
-    """
-
     try:
         with get_cursor() as (conn, cur):
             cur.execute(
@@ -693,29 +746,60 @@ def create_rectangle_submission(user_id, squares_payload):
             is_duplicate = existing_count > 0
             duplicate_number = existing_count + 1 if is_duplicate else None
 
-            cur.execute(
-                """
-                INSERT INTO submissions
-                    (instance_id, user_id, status, objective_value,
-                     solution_hash, is_duplicate, duplicate_number)
-                VALUES (%s, %s, 'pending', %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (
-                    instance_id,
-                    user_id,
-                    objective_value,
-                    psycopg2.Binary(solution_hash),
-                    is_duplicate,
-                    duplicate_number,
-                ),
-            )
+            if has_dup_cols:
+                cur.execute(
+                    """
+                    INSERT INTO submissions
+                        (instance_id, user_id, status, objective_value,
+                         solution_hash, is_duplicate, duplicate_number)
+                    VALUES (%s, %s, 'pending', %s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        instance_id,
+                        user_id,
+                        objective_value,
+                        psycopg2.Binary(solution_hash),
+                        is_duplicate,
+                        duplicate_number,
+                    ),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO submissions
+                        (instance_id, user_id, status, objective_value, solution_hash)
+                    VALUES (%s, %s, 'pending', %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        instance_id,
+                        user_id,
+                        objective_value,
+                        psycopg2.Binary(solution_hash),
+                    ),
+                )
             row = cur.fetchone()
             if not row:
                 return None, "Failed to create submission."
             submission_id = row["id"]
 
-            if is_duplicate and existing_count == 1:
+            if has_dup_cols and is_duplicate and existing_count == 1:
+                mark_first_duplicate_sql = f"""
+                    UPDATE submissions SET is_duplicate = true, duplicate_number = 1
+                    WHERE id = (
+                        SELECT s.id FROM submissions s
+                        LEFT JOIN {RECTANGLE_SQUARES_TABLE} ss ON s.id = ss.submission_id
+                        WHERE s.instance_id = %s
+                          AND s.objective_value = %s
+                          AND s.is_duplicate = false
+                          AND s.id != %s
+                        GROUP BY s.id
+                        HAVING COUNT(ss.idx) = %s
+                        ORDER BY s.created_at ASC
+                        LIMIT 1
+                    )
+                """
                 cur.execute(
                     mark_first_duplicate_sql,
                     (instance_id, objective_value, submission_id, n_shapes),

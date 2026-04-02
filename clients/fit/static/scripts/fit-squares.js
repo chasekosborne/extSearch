@@ -8,7 +8,8 @@ var MIN_REQUIRED = FIT_VARIANT === 'rectangle' ? 1 : MIN_SQUARES;
 
 function updateSubmitButtonState() {
   var n = squares.length;
-  var isOptimal = window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(n);
+  var enforceOptimal = FIT_VARIANT === 'square';
+  var isOptimal = enforceOptimal && window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(n);
   var tooFew = n < MIN_REQUIRED;
 
   var reason = '';
@@ -42,10 +43,12 @@ function updateSubmitRulesPanel(n, isOptimal) {
     ? (n + ' ' + fitShapeWord(n) + ' placed')
     : ('Place at least ' + MIN_REQUIRED + ' ' + FIT_SHAPE_PLURAL + ' (' + n + ' now)');
 
-  ruleOptimal.className = (n > 0 && isOptimal) ? 'rule-fail' : 'rule-pass';
-  ruleOptimal.textContent = (n > 0 && isOptimal)
-    ? (n + ' ' + fitShapeWord(n) + ' is a known optimal, not accepted')
-    : (FIT_SHAPE_SINGULAR.charAt(0).toUpperCase() + FIT_SHAPE_SINGULAR.slice(1) + ' count is not a known optimal');
+  if (ruleOptimal) {
+    ruleOptimal.className = (n > 0 && isOptimal) ? 'rule-fail' : 'rule-pass';
+    ruleOptimal.textContent = (n > 0 && isOptimal)
+      ? (n + ' ' + fitShapeWord(n) + ' is a known optimal, not accepted')
+      : (FIT_SHAPE_SINGULAR.charAt(0).toUpperCase() + FIT_SHAPE_SINGULAR.slice(1) + ' count is not a known optimal');
+  }
 }
 
 function updateStats() {

@@ -491,7 +491,7 @@ submitBtn.addEventListener('click', async () => {
     showToast('Place at least ' + MIN_SQUARES + ' ' + FIT_SHAPE_PLURAL + ' to submit.', 'error');
     return;
   }
-  if (window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(data.length)) {
+  if (FIT_VARIANT === 'square' && window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(data.length)) {
     showToast('Solutions for ' + data.length + ' ' + fitShapeWord(data.length) + ' are already known optimal.', 'error');
     return;
   }

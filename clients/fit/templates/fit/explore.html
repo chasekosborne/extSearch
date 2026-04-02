@@ -15,6 +15,7 @@
     </div>
 
     <div class="filter-bar">
+      {% if variant == 'square' %}
         <div class="filter-section">
             <span class="filter-label filter-label-optimal">Known optimal (proved · trivial)</span>
             <div class="filter-chips filter-chips-row"
@@ -36,6 +37,7 @@
                 {% endif %}
             </div>
         </div>
+            {% endif %}
         <div class="filter-section">
             <span class="filter-label filter-label-found">Best found (not proved)</span>
             <div class="filter-chips filter-chips-row"

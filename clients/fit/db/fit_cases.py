@@ -48,9 +48,11 @@ def load_found_from_file(path=None):
     return found
 
 
-def build_explore_groups(db_by_n, cases_path=None):
-    optimal_n = get_optimal_n()
-    found_in_file = load_found_from_file(cases_path)
+def build_explore_groups(db_by_n, cases_path=None, variant="square"):
+    variant = (variant or "square").strip().lower()
+    use_known_optimal = variant != "rectangle"
+    optimal_n = get_optimal_n() if use_known_optimal else set()
+    found_in_file = load_found_from_file(cases_path) if use_known_optimal else set()
     all_n_from_db = set(db_by_n)
     all_n_in_range = set(range(1, _FOUND_CAP + 1))
     found_n = (all_n_in_range | found_in_file | all_n_from_db) - optimal_n
