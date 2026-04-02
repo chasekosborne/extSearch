@@ -255,6 +255,7 @@ class AuthServ:
 
 class AuthInterface: # Flask-facing interface, not sanitized
     def __init__(this):
+        global AuthServerInstance
         if AuthServerInstance is None: # Global init, bad 'singleton'
             AuthServerInstance = AuthServ()
 
@@ -355,3 +356,4 @@ if __name__ == "__main__":
     testFull = temp.userTokenSpawn(0,"indexServer") # Works, spawns token-based keys from 
 
     # ... (Test api access)
+    test2 = AuthInterface()
