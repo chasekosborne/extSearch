@@ -476,7 +476,16 @@ submitBtn.addEventListener('mouseleave', function() {
 submitBtn.addEventListener('click', async () => {
   const data = [];
   for (let sq of squares) {
-    data.push(roundCornersForSubmit(getSquareCorners(sq)));
+    const corners = roundCornersForSubmit(getSquareCorners(sq));
+    if (FIT_VARIANT === 'rectangle') {
+      data.push({
+        corners: corners,
+        width: roundDecimal(getShapeWidthPx(sq), 10),
+        height: roundDecimal(getShapeHeightPx(sq), 10)
+      });
+    } else {
+      data.push(corners);
+    }
   }
   if (FIT_VARIANT === 'square' && data.length < MIN_SQUARES) {
     showToast('Place at least ' + MIN_SQUARES + ' ' + FIT_SHAPE_PLURAL + ' to submit.', 'error');

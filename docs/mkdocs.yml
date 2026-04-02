@@ -1,6 +1,7 @@
 site_name: extSearch Docs
 nav:
   - Home : index.md
+  - Fit Game Reference : fit-game-reference.md
 
 theme: material
 

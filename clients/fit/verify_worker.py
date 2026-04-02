@@ -30,6 +30,63 @@ OBJ_TOL = 0.0001
 DIAGONAL_TOL = 0.05
 
 
+def _sat_overlap_float(corners_a, corners_b):
+    eps = 1e-8
+    for poly in (corners_a, corners_b):
+        n = len(poly)
+        for i in range(n):
+            x1, y1 = poly[i]
+            x2, y2 = poly[(i + 1) % n]
+            ax = -(y2 - y1)
+            ay = x2 - x1
+            if abs(ax) < eps and abs(ay) < eps:
+                continue
+
+            min_a = max_a = corners_a[0][0] * ax + corners_a[0][1] * ay
+            for cx, cy in corners_a[1:]:
+                d = cx * ax + cy * ay
+                if d < min_a:
+                    min_a = d
+                elif d > max_a:
+                    max_a = d
+
+            min_b = max_b = corners_b[0][0] * ax + corners_b[0][1] * ay
+            for cx, cy in corners_b[1:]:
+                d = cx * ax + cy * ay
+                if d < min_b:
+                    min_b = d
+                elif d > max_b:
+                    max_b = d
+
+            if max_a <= min_b + eps or max_b <= min_a + eps:
+                return False
+    return True
+
+
+def _rectangle_corners_from_row(sq):
+    cx = float(sq["cx"])
+    cy = float(sq["cy"])
+    ux = float(sq["ux"])
+    uy = float(sq["uy"])
+    width = float(sq["width"])
+    height = float(sq["height"])
+
+    corner_angle = math.atan2(uy, ux)
+    offset_angle = math.atan2(height, width)
+    rotation = corner_angle + offset_angle
+    cos_r = math.cos(rotation)
+    sin_r = math.sin(rotation)
+    hw = width / 2
+    hh = height / 2
+
+    return [
+        (cx + (-hw) * cos_r - (-hh) * sin_r, cy + (-hw) * sin_r + (-hh) * cos_r),
+        (cx + hw * cos_r - (-hh) * sin_r, cy + hw * sin_r + (-hh) * cos_r),
+        (cx + hw * cos_r - hh * sin_r, cy + hw * sin_r + hh * cos_r),
+        (cx + (-hw) * cos_r - hh * sin_r, cy + (-hw) * sin_r + hh * cos_r),
+    ]
+
+
 def corners_from_square_q(cx_q, cy_q, ux_q, uy_q):
     d_q = round(HALF * math.sqrt(2) * QUANT_SCALE)
     return [
@@ -194,11 +251,56 @@ def validate_submission(squares):
     return True, "All checks passed.", metrics
 
 
+def validate_rectangle_submission(squares):
+    if not squares:
+        return False, "No rectangles in submission.", {}
+
+    corners_list = []
+    for sq in squares:
+        width = float(sq.get("width") or 0)
+        height = float(sq.get("height") or 0)
+        if width <= 0 or height <= 0:
+            return False, f"Rectangle {sq.get('idx')}: width/height must be positive.", {}
+
+        ux, uy = float(sq["ux"]), float(sq["uy"])
+        unit_len = math.hypot(ux, uy)
+        if abs(unit_len - 1.0) > UNIT_VEC_TOL:
+            return False, f"Rectangle {sq.get('idx')}: unit vector length mismatch.", {}
+
+        corners_list.append(_rectangle_corners_from_row(sq))
+
+    for i in range(len(corners_list)):
+        for j in range(i + 1, len(corners_list)):
+            if _sat_overlap_float(corners_list[i], corners_list[j]):
+                return False, f"Rectangles {squares[i]['idx']} and {squares[j]['idx']} overlap.", {}
+
+    all_corners = [c for corners in corners_list for c in corners]
+    min_x = min(x for x, y in all_corners)
+    min_y = min(y for x, y in all_corners)
+    max_x = max(x for x, y in all_corners)
+    max_y = max(y for x, y in all_corners)
+    width = (max_x - min_x) / SQUARE_SIZE
+    height = (max_y - min_y) / SQUARE_SIZE
+    computed_obj = round(max(width, height), 5)
+
+    metrics = {
+        "n_squares": len(squares),
+        "computed_objective": computed_obj,
+        "bounding_box": {
+            "width": round(width, 5),
+            "height": round(height, 5),
+        },
+        "validator": VALIDATOR_VERSION,
+        "container_type": "rectangle",
+    }
+    return True, "All checks passed.", metrics
+
+
 def fetch_pending(limit=10):
     with get_cursor(commit=False) as (conn, cur):
         cur.execute(
             """
-            SELECT s.id, s.objective_value
+                        SELECT s.id, s.objective_value, pi.container_type
             FROM submissions s
             JOIN problem_instances pi ON s.instance_id = pi.id
             WHERE pi.domain = 'square_packing_rotatable'
@@ -211,12 +313,14 @@ def fetch_pending(limit=10):
         return cur.fetchall()
 
 
-def fetch_squares(submission_id):
+def fetch_squares(submission_id, container_type):
+    table = "submission_squares" if container_type == "square" else "submission_rectangle_squares"
+    width_select = "NULL::double precision AS width, NULL::double precision AS height" if container_type == "square" else "width, height"
     with get_cursor(commit=False) as (conn, cur):
         cur.execute(
-            """
-            SELECT idx, cx, cy, ux, uy, cx_q, cy_q, ux_q, uy_q
-            FROM submission_squares
+            f"""
+            SELECT idx, cx, cy, ux, uy, cx_q, cy_q, ux_q, uy_q, {width_select}
+            FROM {table}
             WHERE submission_id = %s
             ORDER BY idx
             """,
@@ -267,8 +371,12 @@ def process_batch(limit=10):
     for sub in pending:
         sid = sub["id"]
         obj_from_db = sub.get("objective_value")
-        squares = fetch_squares(sid)
-        valid, reason, metrics = validate_submission(squares)
+        container_type = sub.get("container_type") or "square"
+        squares = fetch_squares(sid, container_type)
+        if container_type == "rectangle":
+            valid, reason, metrics = validate_rectangle_submission(squares)
+        else:
+            valid, reason, metrics = validate_submission(squares)
         record_result(sid, valid, reason, metrics, obj_from_db)
         status = "VALID" if valid else "INVALID"
         print(f"  [{status}] submission {sid}: {reason}")

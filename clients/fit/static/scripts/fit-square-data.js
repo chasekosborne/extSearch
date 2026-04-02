@@ -63,15 +63,18 @@ function setupSquareDataInputHandlers() {
 }
 
 function updateSquareDataDisplay() {
+  var shapeWord = FIT_SHAPE_SINGULAR || 'square';
+  var emptyMsg = 'Select a ' + shapeWord + ' to edit position and rotation';
+
   if (!selectedSquareId) {
-    squareData.innerHTML = '<p class="selection-editor-empty">Select a square to edit position and rotation</p>';
+    squareData.innerHTML = '<p class="selection-editor-empty">' + emptyMsg + '</p>';
     squareData.classList.add('is-empty');
     return;
   }
 
   const sq = squares.find(function(s) { return s.id === selectedSquareId; });
   if (!sq) {
-    squareData.innerHTML = '<p class="selection-editor-empty">Select a square to edit position and rotation</p>';
+    squareData.innerHTML = '<p class="selection-editor-empty">' + emptyMsg + '</p>';
     squareData.classList.add('is-empty');
     return;
   }

@@ -26,6 +26,13 @@ IP_MAX_ANON = 10
 IP_MAX_AUTH = 60
 
 
+def _normalize_variant_arg(raw_variant):
+    variant = (raw_variant or "square").strip().lower()
+    if variant not in ("square", "rectangle"):
+        return "square"
+    return variant
+
+
 # Per-IP sliding-window rate check, returns (allowed, retry_after_seconds)
 def _check_ip_rate(ip: str, is_authenticated: bool) -> tuple[bool, int]:
     now = time.time()
@@ -80,6 +87,7 @@ def api_token():
 
 @fit_bp.route("/api/fit/explore/square-counts")
 def api_explore_square_counts():
+    variant = _normalize_variant_arg(request.args.get("variant"))
     group = request.args.get("group")
     if group not in ("optimal", "found"):
         return jsonify(error="group must be optimal or found"), 400
@@ -88,7 +96,7 @@ def api_explore_square_counts():
         limit = min(100, max(1, request.args.get("limit", CHIP_BATCH, type=int)))
     except TypeError:
         offset, limit = 0, CHIP_BATCH
-    from_db = get_available_square_counts()
+    from_db = get_available_square_counts(variant=variant)
     db_by_n = {r["square_count"]: r["submission_count"] for r in from_db}
     optimal_counts, found_counts = build_explore_groups(db_by_n)
     if group == "optimal":
@@ -103,11 +111,18 @@ def api_explore_square_counts():
 @fit_bp.route("/api/submission/<int:submission_id>/squares")
 def api_submission_squares(submission_id):
     rows = get_submission_squares(submission_id)
-    squares = [
-        {"cx": float(r["cx"]), "cy": float(r["cy"]),
-         "ux": float(r["ux"]), "uy": float(r["uy"])}
-        for r in rows
-    ]
+    squares = []
+    for r in rows:
+        item = {
+            "cx": float(r["cx"]),
+            "cy": float(r["cy"]),
+            "ux": float(r["ux"]),
+            "uy": float(r["uy"]),
+        }
+        if r.get("width") is not None and r.get("height") is not None:
+            item["width"] = float(r["width"])
+            item["height"] = float(r["height"])
+        squares.append(item)
     return jsonify(squares=squares)
 
 

@@ -13,8 +13,8 @@ Fit
 
 {% block content %}
 <div class="game-container">
-<!-- Selected square editor: above toolbar on desktop, below toolbar on small screens -->
-<section class="selection-editor" id="selection-editor" aria-label="Selected square properties">
+<!-- Selected shape editor: above toolbar on desktop, below toolbar on small screens -->
+<section class="selection-editor" id="selection-editor" aria-label="Selected {{ 'rectangle' if initial_variant == 'rectangle' else 'square' }} properties">
     <div class="square-data" id="square-data"></div>
 </section>
 
@@ -53,7 +53,7 @@ Fit
 
     <div class="bottom-bar-inner">
         <div class="bar-group bar-group-add">
-            <div class="source-square" id="source" title="Drag to board to add a square">
+            <div class="source-square" id="source" title="Drag to board to add a {{ 'rectangle' if initial_variant == 'rectangle' else 'square' }}">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                 </svg>

@@ -8,10 +8,10 @@
 {% block title %}Explore Solutions | extSearch{% endblock %}
 
 {% block content %}
-<main class="page">
+<main class="page" data-fit-variant="{{ variant }}" data-selected-n="{{ selected_n or '' }}">
     <div class="page-header">
         <h1>Explore Solutions</h1>
-        <p class="page-subtitle">Best submissions for the Fit problem by number of squares.</p>
+      <p class="page-subtitle">Best {{ variant }} submissions for the Fit problem by number of shapes.</p>
     </div>
 
     <div class="filter-bar">
@@ -44,7 +44,7 @@
                  data-has-more="{{ 'true' if found_has_more else 'false' }}"
                  data-selected-n="{{ selected_n or '' }}">
                 {% for sc in found_counts %}
-                <a href="{{ url_for('fit.explore_solutions', n=sc.square_count) }}"
+                 <a href="{{ url_for('fit.explore_solutions', variant=variant, n=sc.square_count) }}"
                    class="chip chip-found {% if selected_n == sc.square_count %}active{% endif %}"
                    title="Best known - optimality not proved">
                     {{ sc.square_count }}
@@ -68,11 +68,10 @@
         {% if submissions %}
         <div class="results-wrapper">
         <div class="results-header">
-            <span class="results-label">{{ total }} submission{{ 's' if total != 1 else '' }} with {{ selected_n }} square{{ 's' if selected_n != 1 else '' }}</span>
+            <span class="results-label">{{ total }} submission{{ 's' if total != 1 else '' }} with {{ selected_n }} {{ 'rectangle' if variant == 'rectangle' else 'square' }}{{ 's' if selected_n != 1 else '' }}</span>
             <label class="dup-toggle">
                 <input type="checkbox" id="hide-dupes"
                        {% if hide_duplicates %}checked{% endif %}
-                       onchange="window.location.href='{{ url_for('fit.explore_solutions', n=selected_n) }}&hide_duplicates=' + (this.checked ? '1' : '0')">
                 <span>Hide duplicates</span>
             </label>
         </div>
@@ -108,7 +107,7 @@
                             <div class="detail-panel">
                                 <div class="solution-svg-container" id="canvas-{{ sub.id }}" aria-label="Solution visualization"></div>
                                 <div class="solution-actions">
-                                    <a href="{{ url_for('fit.game') }}?load={{ sub.id }}" class="solution-action-btn solution-action-view">View in Fit</a>
+                                    <a href="{{ url_for('fit.game', variant=variant) }}&load={{ sub.id }}" class="solution-action-btn solution-action-view">View in Fit</a>
                                     <button type="button" class="solution-download-btn" data-submission-id="{{ sub.id }}" data-n="{{ selected_n }}">Download SVG</button>
                                 </div>
                             </div>
@@ -125,13 +124,13 @@
         {% if total_pages > 1 %}
         <nav class="pagination">
             {% if page > 1 %}
-            <a href="{{ url_for('fit.explore_solutions', n=selected_n, page=page-1, hide_duplicates='1' if hide_duplicates else '0') }}" class="page-btn">← Prev</a>
+            <a href="{{ url_for('fit.explore_solutions', variant=variant, n=selected_n, page=page-1, hide_duplicates='1' if hide_duplicates else '0') }}" class="page-btn">← Prev</a>
             {% else %}
             <span class="page-btn disabled">← Prev</span>
             {% endif %}
             <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
             {% if page < total_pages %}
-            <a href="{{ url_for('fit.explore_solutions', n=selected_n, page=page+1, hide_duplicates='1' if hide_duplicates else '0') }}" class="page-btn">Next →</a>
+            <a href="{{ url_for('fit.explore_solutions', variant=variant, n=selected_n, page=page+1, hide_duplicates='1' if hide_duplicates else '0') }}" class="page-btn">Next →</a>
             {% else %}
             <span class="page-btn disabled">Next →</span>
             {% endif %}
@@ -141,12 +140,12 @@
 
         {% else %}
         <div class="empty-state">
-            <p>No submissions with {{ selected_n }} squares yet.</p>
+            <p>No submissions with {{ selected_n }} {{ 'rectangles' if variant == 'rectangle' else 'squares' }} yet.</p>
         </div>
         {% endif %}
     {% else %}
         <div class="empty-state">
-            <p>Select a square count above to view the best solutions.</p>
+            <p>Select a count above to view the best solutions.</p>
         </div>
     {% endif %}
 </main>
@@ -159,6 +158,22 @@
   const HALF = SQUARE_SIZE / 2;
   const loaded = {};
   const CHIP_BATCH = 50;
+  const VARIANT = document.querySelector('.page').dataset.fitVariant || 'square';
+  const hideDuplicatesInput = document.getElementById('hide-dupes');
+  const selectedNValue = document.querySelector('.page').dataset.selectedN;
+  const currentSelectedN = selectedNValue ? parseInt(selectedNValue, 10) : null;
+
+  if (hideDuplicatesInput) {
+    hideDuplicatesInput.addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('variant', VARIANT);
+      if (currentSelectedN !== null) {
+        url.searchParams.set('n', String(currentSelectedN));
+      }
+      url.searchParams.set('hide_duplicates', this.checked ? '1' : '0');
+      window.location.href = url.toString();
+    });
+  }
 
   // Chips: single row, horizontal scroll, load more on scroll
   document.querySelectorAll('.filter-chips-row').forEach(function(row) {
@@ -168,7 +183,7 @@
     let loading = false;
 
     function getExploreUrl(n) {
-      return '/fit/explore?n=' + encodeURIComponent(n);
+      return '/fit/explore?variant=' + encodeURIComponent(VARIANT) + '&n=' + encodeURIComponent(n);
     }
     function loadMore() {
       if (loading) return;
@@ -177,7 +192,7 @@
       const offset = parseInt(row.dataset.offset, 10) || 0;
       loading = true;
       if (loadMoreEl) loadMoreEl.textContent = 'Loading…';
-      fetch('/api/fit/explore/square-counts?group=' + encodeURIComponent(group) + '&offset=' + offset + '&limit=' + CHIP_BATCH)
+      fetch('/api/fit/explore/square-counts?variant=' + encodeURIComponent(VARIANT) + '&group=' + encodeURIComponent(group) + '&offset=' + offset + '&limit=' + CHIP_BATCH)
         .then(function(r) { return r.json(); })
         .then(function(data) {
           const selectedN = row.dataset.selectedN ? parseInt(row.dataset.selectedN, 10) : null;
@@ -258,13 +273,30 @@
 
     squares.forEach(function(sq) {
       const cx = sq.cx, cy = sq.cy;
-      const d = HALF * Math.SQRT2;
-      const corners = [
-        { x: cx + d * sq.ux,       y: cy + d * sq.uy },
-        { x: cx - d * sq.uy,       y: cy + d * sq.ux },
-        { x: cx - d * sq.ux,       y: cy - d * sq.uy },
-        { x: cx + d * sq.uy,       y: cy - d * sq.ux },
-      ];
+      let corners;
+      if (Number.isFinite(sq.width) && Number.isFinite(sq.height) && sq.width > 0 && sq.height > 0) {
+        const cornerAngle = Math.atan2(sq.uy, sq.ux);
+        const offsetAngle = Math.atan2(sq.height, sq.width);
+        const rotation = cornerAngle + offsetAngle;
+        const cos = Math.cos(rotation);
+        const sin = Math.sin(rotation);
+        const hw = sq.width / 2;
+        const hh = sq.height / 2;
+        corners = [
+          { x: cx + (-hw) * cos - (-hh) * sin, y: cy + (-hw) * sin + (-hh) * cos },
+          { x: cx + hw * cos - (-hh) * sin, y: cy + hw * sin + (-hh) * cos },
+          { x: cx + hw * cos - hh * sin, y: cy + hw * sin + hh * cos },
+          { x: cx + (-hw) * cos - hh * sin, y: cy + (-hw) * sin + hh * cos },
+        ];
+      } else {
+        const d = HALF * Math.SQRT2;
+        corners = [
+          { x: cx + d * sq.ux,       y: cy + d * sq.uy },
+          { x: cx - d * sq.uy,       y: cy + d * sq.ux },
+          { x: cx - d * sq.ux,       y: cy - d * sq.uy },
+          { x: cx + d * sq.uy,       y: cy - d * sq.ux },
+        ];
+      }
       squareCorners.push(corners);
       allCorners = allCorners.concat(corners);
     });
@@ -281,42 +313,42 @@
 
     const bw = maxX - minX;
     const bh = maxY - minY;
-    const bSide = Math.max(bw, bh);
-    const bCx = (minX + maxX) / 2;
-    const bCy = (minY + maxY) / 2;
-    const bx0 = bCx - bSide / 2;
-    const by0 = bCy - bSide / 2;
-
-    const padding = bSide * 0.08;
-    const totalSide = bSide + padding * 2;
+    const isRectangleVariant = VARIANT === 'rectangle';
+    const paddingX = bw * 0.08;
+    const paddingY = bh * 0.08;
+    const totalWidth = bw + paddingX * 2;
+    const totalHeight = bh + paddingY * 2;
     const size = 400;
-    const scale = size / totalSide;
+    const scale = Math.min(size / totalWidth, size / totalHeight);
+    const svgHeight = isRectangleVariant ? Math.max(220, Math.round(totalHeight * scale)) : size;
+    const yOffset = isRectangleVariant ? Math.max(0, (svgHeight - totalHeight * scale) / 2) : 0;
 
-    function tx(x) { return (x - bx0 + padding) * scale; }
-    function ty(y) { return (y - by0 + padding) * scale; }
+    function tx(x) { return (x - minX + paddingX) * scale; }
+    function ty(y) { return (y - minY + paddingY) * scale + yOffset; }
 
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
     svg.setAttribute('xmlns', svgNS);
-    svg.setAttribute('viewBox', '0 0 ' + size + ' ' + size);
+    svg.setAttribute('viewBox', '0 0 ' + size + ' ' + svgHeight);
     svg.setAttribute('width', size);
-    svg.setAttribute('height', size);
+    svg.setAttribute('height', svgHeight);
     svg.setAttribute('class', 'solution-svg');
 
     const bg = document.createElementNS(svgNS, 'rect');
     bg.setAttribute('width', size);
-    bg.setAttribute('height', size);
+    bg.setAttribute('height', svgHeight);
     bg.setAttribute('fill', '#ffffff');
     svg.appendChild(bg);
 
-    const boxW = bSide * scale;
-    const boxX = tx(bx0);
-    const boxY = ty(by0);
+    const boxW = bw * scale;
+    const boxH = bh * scale;
+    const boxX = tx(minX);
+    const boxY = ty(minY);
     const boundsRect = document.createElementNS(svgNS, 'rect');
     boundsRect.setAttribute('x', boxX);
     boundsRect.setAttribute('y', boxY);
     boundsRect.setAttribute('width', boxW);
-    boundsRect.setAttribute('height', boxW);
+    boundsRect.setAttribute('height', isRectangleVariant ? boxH : boxW);
     boundsRect.setAttribute('fill', 'none');
     boundsRect.setAttribute('stroke', '#000000');
     boundsRect.setAttribute('stroke-width', 1);

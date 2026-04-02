@@ -84,60 +84,41 @@ function pointInRotatedSquare(point, sq) {
 
 // Check if two rotated squares overlap using SAT (Separating Axis Theorem)
 function squaresOverlap(sq1, sq2) {
-  // Quick AABB check first
-  const bounds1 = getRotatedSquareBounds(sq1);
-  const bounds2 = getRotatedSquareBounds(sq2);
-
-  if (bounds1.maxX <= bounds2.minX || bounds2.maxX <= bounds1.minX ||
-      bounds1.maxY <= bounds2.minY || bounds2.maxY <= bounds1.minY) {
-    return false;
-  }
-
-  // More precise check: check if any corner of one square is inside the other
   const corners1 = getSquareCorners(sq1);
   const corners2 = getSquareCorners(sq2);
+  const eps = 1e-8;
 
-  // Check if any corner of sq1 is inside sq2
-  for (let i = 0; i < corners1.length; i++) {
-    if (pointInRotatedSquare(corners1[i], sq2)) {
-      return true;
+  function project(corners, ax, ay) {
+    let min = corners[0].x * ax + corners[0].y * ay;
+    let max = min;
+    for (let i = 1; i < corners.length; i++) {
+      const d = corners[i].x * ax + corners[i].y * ay;
+      if (d < min) min = d;
+      if (d > max) max = d;
     }
+    return { min: min, max: max };
   }
 
-  // Check if any corner of sq2 is inside sq1
-  for (let i = 0; i < corners2.length; i++) {
-    if (pointInRotatedSquare(corners2[i], sq1)) {
-      return true;
-    }
-  }
+  const polys = [corners1, corners2];
+  for (let p = 0; p < polys.length; p++) {
+    const poly = polys[p];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % poly.length];
+      const ax = -(b.y - a.y);
+      const ay = b.x - a.x;
+      if (Math.abs(ax) < eps && Math.abs(ay) < eps) continue;
 
-  // Check if edges intersect (simplified: check if squares are very close)
-  const center1 = { x: sq1.x + getShapeWidthPx(sq1) / 2, y: sq1.y + getShapeHeightPx(sq1) / 2 };
-  const center2 = { x: sq2.x + getShapeWidthPx(sq2) / 2, y: sq2.y + getShapeHeightPx(sq2) / 2 };
-  const dist = Math.sqrt(Math.pow(center1.x - center2.x, 2) + Math.pow(center1.y - center2.y, 2));
+      const p1 = project(corners1, ax, ay);
+      const p2 = project(corners2, ax, ay);
 
-  const radius1 = Math.hypot(getShapeWidthPx(sq1) / 2, getShapeHeightPx(sq1) / 2);
-  const radius2 = Math.hypot(getShapeWidthPx(sq2) / 2, getShapeHeightPx(sq2) / 2);
-  if (dist < (radius1 + radius2)) {
-    const edges1 = [
-      [corners1[0], corners1[1]],
-      [corners1[1], corners1[2]],
-      [corners1[2], corners1[3]],
-      [corners1[3], corners1[0]]
-    ];
-
-    for (let edge of edges1) {
-      const midPoint = {
-        x: (edge[0].x + edge[1].x) / 2,
-        y: (edge[0].y + edge[1].y) / 2
-      };
-      if (pointInRotatedSquare(midPoint, sq2)) {
-        return true;
+      // Touching edges are non-overlapping.
+      if (p1.max <= p2.min + eps || p2.max <= p1.min + eps) {
+        return false;
       }
     }
   }
-
-  return false;
+  return true;
 }
 
 // Check if a square at given position/rotation would collide with any other square

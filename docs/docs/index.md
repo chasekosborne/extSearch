@@ -16,6 +16,7 @@ The **Fit** game is the first problem hosted on extSearch. It provides:
 For a deep dive into how the Fit frontend works (coordinate system, collision detection, pointer handling, and data export), see:
 
 - [Fit game implementation (`fit.js`)](fit.md)
+- [Fit game reference (Square + Rectangle)](fit-game-reference.md)
 
 ---
 

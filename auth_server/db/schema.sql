@@ -1,4 +1,4 @@
-psql -U extsearch -d extsearch_auth -f auth_server/db/schema.sql
+-- psql -U extsearch -d extsearch_auth -f auth_server/db/schema.sql
 -- Authentication Database Schema
 -- This database is owned by the auth server and stores user accounts only.
 -- All other data (submissions, workspaces, etc.) lives in the submissions DB.

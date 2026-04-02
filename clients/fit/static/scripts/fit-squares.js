@@ -144,11 +144,24 @@ function addSquare(x, y, width, height) {
 /** Convert API square (cx, cy, ux, uy) to Fit game square (x, y, rotation). */
 function apiSquareToFit(apiSq) {
   const cx = apiSq.cx, cy = apiSq.cy, ux = apiSq.ux, uy = apiSq.uy;
+  const width = Number.isFinite(apiSq.width) && apiSq.width > 0 ? apiSq.width : SQUARE_SIZE;
+  const height = Number.isFinite(apiSq.height) && apiSq.height > 0 ? apiSq.height : SQUARE_SIZE;
+
+  if (FIT_VARIANT === 'rectangle' && Number.isFinite(apiSq.width) && Number.isFinite(apiSq.height)) {
+    const cornerAngle = Math.atan2(uy, ux);
+    const offsetAngle = Math.atan2(height, width);
+    let rotation = (cornerAngle + offsetAngle) * (180 / Math.PI);
+    rotation = ((rotation % 360) + 360) % 360;
+    const x = cx - width / 2;
+    const y = cy - height / 2;
+    return { x: x, y: y, width: width, height: height, rotation: rotation };
+  }
+
   const x = cx - SQUARE_SIZE / 2;
   const y = cy - SQUARE_SIZE / 2;
   let rotation = Math.atan2(uy, ux) * (180 / Math.PI) + 45;
   rotation = ((rotation % 360) + 360) % 360;
-  return { x: x, y: y, rotation: rotation };
+  return { x: x, y: y, width: SQUARE_SIZE, height: SQUARE_SIZE, rotation: rotation };
 }
 
 /** Load a submission into the board (from ?load=id). Clears existing squares. */
@@ -167,8 +180,8 @@ function loadSubmissionIntoBoard(submissionId) {
           id: 'sq-' + (++idCounter),
           x: fitSq.x,
           y: fitSq.y,
-          width: SQUARE_SIZE,
-          height: SQUARE_SIZE,
+          width: fitSq.width,
+          height: fitSq.height,
           rotation: fitSq.rotation,
           mode: 'move'
         };
