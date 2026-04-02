@@ -159,13 +159,13 @@ class AuthServ:
 
     def userLookup(this,username=None,email=None): # Return uid(s) array
         if (username): # Note username is unique
-            uid = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE username = {username}""").fetchone()
+            uid = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE username = \"{username}\" """).fetchone()
             if not uid:
                 return False
             return [uid]
 
         if (email): # Note email is NOT NECESSARILY unique, return array
-            search = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE email = {email} """).fetchall()
+            search = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE email = "{email}" """).fetchall()
 
             if not search:
                 return False
@@ -209,12 +209,15 @@ class AuthServ:
             authHead = authFull[:32]
             authTail = authFull[32:]
 
-            print(authFull)
+            # print(authFull)
             
             if not (this.authDb.cursor().execute(f""" SELECT authHead FROM tokens WHERE authHead = "{authHead}" """).fetchone()):
                 break # If no authHead found, then generated...
 
+        # print("prefail")
+        # print(uid)
         this.authDb.cursor().execute(f""" INSERT INTO tokens (authHead,authTail,serverScope,id,expiry) VALUES ("{authHead}","{authTail}","{serverScope}",{uid},{expiry})""")
+        # print("postfail")
         this.authDb.commit()
 
         return [authHead,authTail]
@@ -270,7 +273,9 @@ class AuthInterface: # Flask-facing interface, not sanitized
             return False # User creation failed.
 
         # User creation success...
-        targetUid = AuthServerInstance.userLookup(username=username)
+        # print("starting userLookup")
+        targetUid = AuthServerInstance.userLookup(username=username)[0][0] # Only one username. Need to double unwrap...
+        # print("finished lookup")
         
         return AuthServerInstance.userTokenSpawn(targetUid,"indexServer") # Returns [authHead,authTail], no protection...
     ###
