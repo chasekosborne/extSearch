@@ -5,6 +5,77 @@
 
 var FIT_MOBILE = typeof window !== 'undefined' && !!window.FIT_MOBILE;
 
+/** Two-finger pinch zoom (touch UI): pointers on empty board only, max two tracked. */
+var fitBoardTouchPointers = new Map();
+var fitPinchState = null;
+
+function isFitPinchEligibleTarget(el) {
+  if (!el || !boardZoomContainer || !board.contains(el)) return false;
+  if (el.closest('.square')) return false;
+  if (el.closest('#square-data')) return false;
+  return true;
+}
+
+function fitPinchPointerDistance() {
+  var pts = [];
+  fitBoardTouchPointers.forEach(function (p) {
+    pts.push(p);
+  });
+  if (pts.length < 2) return 0;
+  var dx = pts[1].x - pts[0].x;
+  var dy = pts[1].y - pts[0].y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function fitAbortDragForPinch() {
+  if (!dragState) return;
+  if (dragState.captureEl && dragState.capturePointerId != null) {
+    try {
+      dragState.captureEl.releasePointerCapture(dragState.capturePointerId);
+    } catch (err) {}
+  }
+  if (dragState.type === 'create') {
+    ghost.style.display = 'none';
+  } else if (dragState.type === 'move') {
+    var mel = board.querySelector('[data-id="' + dragState.id + '"]');
+    if (mel) mel.style.zIndex = '';
+    deleteZone.classList.remove('active');
+  } else if (dragState.type === 'rotate') {
+    var rel = board.querySelector('[data-id="' + dragState.id + '"]');
+    if (rel) rel.style.zIndex = '';
+  } else if (dragState.type === 'pan') {
+    boardZoomContainer.classList.remove('panning');
+  }
+  dragState = null;
+}
+
+function fitApplyPinchZoom() {
+  if (!fitPinchState || fitBoardTouchPointers.size < 2) return;
+  var d = fitPinchPointerDistance();
+  if (d < 8) return;
+  var lastD = fitPinchState.lastD;
+  if (lastD < 8) {
+    fitPinchState.lastD = d;
+    return;
+  }
+  var ratio = d / lastD;
+  var newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * ratio));
+  var rect = boardZoomContainer.getBoundingClientRect();
+  var pts = [];
+  fitBoardTouchPointers.forEach(function (p) {
+    pts.push(p);
+  });
+  var midX = (pts[0].x + pts[1].x) / 2 - rect.left;
+  var midY = (pts[0].y + pts[1].y) / 2 - rect.top;
+  var lx = (midX + panX) / zoom;
+  var ly = (midY + panY) / zoom;
+  panX = lx * newZoom - midX;
+  panY = ly * newZoom - midY;
+  zoom = newZoom;
+  fitPinchState.lastD = d;
+  applyTransform();
+}
+
 function fitSetPointerCapture(el, e) {
   if (!el || e.pointerId === undefined) return;
   try {
@@ -74,6 +145,19 @@ function fitPasteSquare() {
 }
 
 function onPointerDown(e) {
+  if (FIT_MOBILE && e.pointerType === 'touch' && isFitPinchEligibleTarget(e.target)) {
+    if (fitBoardTouchPointers.size < 2) {
+      fitBoardTouchPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fitBoardTouchPointers.size === 2) {
+        fitAbortDragForPinch();
+        fitPinchState = { lastD: Math.max(fitPinchPointerDistance(), 10) };
+        boardZoomContainer.classList.add('pinching');
+        e.preventDefault();
+        return;
+      }
+    }
+  }
+
   const target = e.target.closest('.square');
   const isSource = e.target.closest('#source');
   const isPopup = e.target.closest('#square-data');
@@ -192,6 +276,16 @@ function onPointerDown(e) {
 }
 
 function onPointerMove(e) {
+  if (FIT_MOBILE && fitBoardTouchPointers.has(e.pointerId)) {
+    fitBoardTouchPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  }
+
+  if (FIT_MOBILE && fitPinchState && fitBoardTouchPointers.size >= 2) {
+    fitApplyPinchZoom();
+    if (e.cancelable) e.preventDefault();
+    return;
+  }
+
   if (!dragState) return;
 
   if (dragState.type === 'create') {
@@ -395,6 +489,12 @@ function dotProduct(v, u){ // returns dot product of two duples with elements x 
 }
 
 function onPointerUp(e) {
+  if (FIT_MOBILE && fitBoardTouchPointers.has(e.pointerId)) {
+    fitBoardTouchPointers.delete(e.pointerId);
+    fitPinchState = null;
+    boardZoomContainer.classList.remove('pinching');
+  }
+
   if (!dragState) return;
 
   fitReleaseDragPointerCapture(e);
@@ -461,10 +561,11 @@ function onWheel(e) {
 /* Event listener bindings */
 boardZoomContainer.addEventListener('wheel', onWheel, { passive: false });
 
-document.addEventListener('pointerdown', onPointerDown);
-document.addEventListener('pointermove', onPointerMove);
-document.addEventListener('pointerup', onPointerUp);
-document.addEventListener('pointercancel', onPointerUp);
+var fitPointerOpts = FIT_MOBILE ? { passive: false } : false;
+document.addEventListener('pointerdown', onPointerDown, fitPointerOpts);
+document.addEventListener('pointermove', onPointerMove, fitPointerOpts);
+document.addEventListener('pointerup', onPointerUp, fitPointerOpts);
+document.addEventListener('pointercancel', onPointerUp, fitPointerOpts);
 board.addEventListener('dblclick', onDoubleClick);
 
 document.addEventListener('dragstart', function(e) { e.preventDefault(); });
