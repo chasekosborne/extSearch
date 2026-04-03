@@ -5,6 +5,49 @@
 
 var FIT_MOBILE = typeof window !== 'undefined' && !!window.FIT_MOBILE;
 
+/** Board-background pointers (for two-finger pinch zoom on touch). */
+var fitMobileBoardPointers = new Map();
+/** { id1, id2, lastDist } or null */
+var fitPinchState = null;
+
+function fitBeginMobilePinch() {
+  if (!FIT_MOBILE || fitPinchState || fitMobileBoardPointers.size < 2) return;
+  var ids = Array.from(fitMobileBoardPointers.keys());
+  var p0 = fitMobileBoardPointers.get(ids[0]);
+  var p1 = fitMobileBoardPointers.get(ids[1]);
+  var d = Math.hypot(p0.clientX - p1.clientX, p0.clientY - p1.clientY);
+  if (d < 8) return;
+  if (dragState && dragState.type === 'pan') {
+    try {
+      boardZoomContainer.releasePointerCapture(dragState.capturePointerId);
+    } catch (err) {}
+    boardZoomContainer.classList.remove('panning');
+    dragState = null;
+  }
+  fitPinchState = { id1: ids[0], id2: ids[1], lastDist: d };
+}
+
+function fitApplyMobilePinchZoom() {
+  if (!fitPinchState) return;
+  var p0 = fitMobileBoardPointers.get(fitPinchState.id1);
+  var p1 = fitMobileBoardPointers.get(fitPinchState.id2);
+  if (!p0 || !p1) return;
+  var d = Math.hypot(p0.clientX - p1.clientX, p0.clientY - p1.clientY);
+  if (d <= 1 || fitPinchState.lastDist <= 1) return;
+  var rect = boardZoomContainer.getBoundingClientRect();
+  var sx = (p0.clientX + p1.clientX) / 2 - rect.left;
+  var sy = (p0.clientY + p1.clientY) / 2 - rect.top;
+  var ratio = d / fitPinchState.lastDist;
+  fitPinchState.lastDist = d;
+  var lx = (sx + panX) / zoom;
+  var ly = (sy + panY) / zoom;
+  var newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * ratio));
+  panX = lx * newZoom - sx;
+  panY = ly * newZoom - sy;
+  zoom = newZoom;
+  applyTransform();
+}
+
 function fitSetPointerCapture(el, e) {
   if (!el || e.pointerId === undefined) return;
   try {
@@ -96,6 +139,18 @@ function onPointerDown(e) {
     updateSquareDataDisplay();
     e.preventDefault();
   } else if (isBoard) {
+    if (FIT_MOBILE) {
+      fitMobileBoardPointers.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
+      fitBeginMobilePinch();
+      if (fitPinchState) {
+        e.preventDefault();
+        return;
+      }
+      if (fitMobileBoardPointers.size >= 2) {
+        e.preventDefault();
+        return;
+      }
+    }
     selectedSquareId = null;
     updateAllSquareClasses();
     updateSquareDataDisplay();
@@ -192,6 +247,22 @@ function onPointerDown(e) {
 }
 
 function onPointerMove(e) {
+  if (FIT_MOBILE && fitMobileBoardPointers.has(e.pointerId)) {
+    fitMobileBoardPointers.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
+  }
+
+  if (FIT_MOBILE && !fitPinchState && fitMobileBoardPointers.size >= 2) {
+    fitBeginMobilePinch();
+  }
+
+  if (FIT_MOBILE && fitPinchState &&
+      fitMobileBoardPointers.has(fitPinchState.id1) &&
+      fitMobileBoardPointers.has(fitPinchState.id2)) {
+    fitApplyMobilePinchZoom();
+    e.preventDefault();
+    return;
+  }
+
   if (!dragState) return;
 
   if (dragState.type === 'create') {
@@ -395,6 +466,13 @@ function dotProduct(v, u){ // returns dot product of two duples with elements x 
 }
 
 function onPointerUp(e) {
+  if (FIT_MOBILE) {
+    fitMobileBoardPointers.delete(e.pointerId);
+    if (fitPinchState && (e.pointerId === fitPinchState.id1 || e.pointerId === fitPinchState.id2)) {
+      fitPinchState = null;
+    }
+  }
+
   if (!dragState) return;
 
   fitReleaseDragPointerCapture(e);
