@@ -4,7 +4,7 @@
  */
 
 function applySquareDataInputs() {
-  if (!selectedSquareId) return;
+  if (!squareData || !selectedSquareId) return;
   const sq = squares.find(function(s) { return s.id === selectedSquareId; });
   if (!sq) return;
   const xIn = squareData.querySelector('.data-input-x');
@@ -61,6 +61,7 @@ function setupSquareDataInputHandlers() {
 }
 
 function updateSquareDataDisplay() {
+  if (!squareData) return;
   if (!selectedSquareId) {
     squareData.innerHTML = '<p class="selection-editor-empty">Select a square to edit position and rotation</p>';
     squareData.classList.add('is-empty');

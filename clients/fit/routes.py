@@ -1,4 +1,6 @@
-from flask import render_template, request
+import re
+
+from flask import redirect, render_template, request, url_for
 
 from clients.fit import fit_bp
 from clients.fit.db.fit_cases import build_explore_groups, get_optimal_n
@@ -11,10 +13,38 @@ from shared.users import enrich_submissions_with_usernames
 
 CHIP_BATCH = 50
 
+# Phones / tablets: send /fit → touch UI unless ?desktop=1 (iPad desktop UA needs client hint on home).
+_FIT_TOUCH_UA = re.compile(
+    r"iPhone|iPod|iPad|Android|webOS|BlackBerry|IEMobile|Opera Mini|"
+    r"bada/|SamsungBrowser|Mobile Safari|CriOS|FxiOS|Silk/|Windows Phone",
+    re.I,
+)
+
+
+def _prefer_fit_touch_ui():
+    if request.args.get("desktop") == "1":
+        return False
+    if request.headers.get("Sec-CH-UA-Mobile", "").strip() == "?1":
+        return True
+    ua = request.headers.get("User-Agent", "") or ""
+    return bool(_FIT_TOUCH_UA.search(ua))
+
 
 @fit_bp.route("/fit")
 def game():
+    if _prefer_fit_touch_ui():
+        dest = url_for("fit.game_mobile")
+        qs = request.query_string.decode()
+        if qs:
+            dest = f"{dest}?{qs}"
+        return redirect(dest, code=302)
     return render_template("fit/game.html", optimal_n=list(get_optimal_n()))
+
+
+@fit_bp.route("/fit/mobile")
+def game_mobile():
+    """Minimal touch UI: place squares, drag to trash, submit. Full game stays at /fit."""
+    return render_template("fit/game-mobile.html", optimal_n=list(get_optimal_n()))
 
 
 @fit_bp.route("/fit/api")

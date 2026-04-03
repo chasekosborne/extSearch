@@ -3,6 +3,22 @@
  * Depends on: all other fit-*.js (constants, geometry, transform, squares, square-data).
  */
 
+var FIT_MOBILE = typeof window !== 'undefined' && !!window.FIT_MOBILE;
+
+function fitSetPointerCapture(el, e) {
+  if (!el || e.pointerId === undefined) return;
+  try {
+    el.setPointerCapture(e.pointerId);
+  } catch (err) {}
+}
+
+function fitReleaseDragPointerCapture(e) {
+  if (!dragState || dragState.capturePointerId !== e.pointerId || !dragState.captureEl) return;
+  try {
+    dragState.captureEl.releasePointerCapture(e.pointerId);
+  } catch (err) {}
+}
+
 function isInDeleteZone(clientX, clientY) {
   const rect = deleteZone.getBoundingClientRect();
   return clientX >= rect.left && clientX <= rect.right &&
@@ -64,7 +80,14 @@ function onPointerDown(e) {
   const isBoard = e.target.closest('#board') && !target && !isPopup;
 
   if (isSource) {
-    dragState = { type: 'create', startX: e.clientX, startY: e.clientY };
+    dragState = {
+      type: 'create',
+      startX: e.clientX,
+      startY: e.clientY,
+      captureEl: source,
+      capturePointerId: e.pointerId
+    };
+    fitSetPointerCapture(source, e);
     ghost.style.display = 'block';
     ghost.style.left = (e.clientX - SQUARE_SIZE / 2) + 'px';
     ghost.style.top = (e.clientY - SQUARE_SIZE / 2) + 'px';
@@ -81,14 +104,21 @@ function onPointerDown(e) {
       startClientX: e.clientX,
       startClientY: e.clientY,
       startPanX: panX,
-      startPanY: panY
+      startPanY: panY,
+      captureEl: boardZoomContainer,
+      capturePointerId: e.pointerId
     };
+    fitSetPointerCapture(boardZoomContainer, e);
     boardZoomContainer.classList.add('panning');
     e.preventDefault();
   } else if (target) {
     const id = target.dataset.id;
     const sq = squares.find(function(s) { return s.id === id; });
     if (!sq) return;
+
+    if (FIT_MOBILE) {
+      sq.mode = 'move';
+    }
 
     pushUndoState();
 
@@ -103,8 +133,10 @@ function onPointerDown(e) {
           type: 'move',
           id: id,
           offsetX: pt.x - sq.x,
-          offsetY: pt.y - sq.y
-        }
+          offsetY: pt.y - sq.y,
+          captureEl: target,
+          capturePointerId: e.pointerId
+        };
 
         offsets.length = 0; // clear the array
         for (temp of selectedSquares){
@@ -113,6 +145,7 @@ function onPointerDown(e) {
         }
         //console.log(offsets[0].x);
 
+        fitSetPointerCapture(target, e);
         target.style.zIndex = 100;
         e.preventDefault();
 
@@ -133,8 +166,11 @@ function onPointerDown(e) {
           type: 'rotate',
           id: id,
           startAngle: startAngle,
-          startRotation: sq.rotation
+          startRotation: sq.rotation,
+          captureEl: target,
+          capturePointerId: e.pointerId
         };
+        fitSetPointerCapture(target, e);
         target.style.zIndex = 100;
         e.preventDefault();
       } else {
@@ -143,8 +179,11 @@ function onPointerDown(e) {
           type: 'move',
           id: id,
           offsetX: pt.x - sq.x,
-          offsetY: pt.y - sq.y
+          offsetY: pt.y - sq.y,
+          captureEl: target,
+          capturePointerId: e.pointerId
         };
+        fitSetPointerCapture(target, e);
         target.style.zIndex = 100;
         e.preventDefault();
     }
@@ -358,6 +397,8 @@ function dotProduct(v, u){ // returns dot product of two duples with elements x 
 function onPointerUp(e) {
   if (!dragState) return;
 
+  fitReleaseDragPointerCapture(e);
+
   if (dragState.type === 'create') {
     ghost.style.display = 'none';
 
@@ -388,6 +429,7 @@ function onPointerUp(e) {
 
 function onDoubleClick(e) {
   if (dragState) return;
+  if (FIT_MOBILE) return;
 
   const target = e.target.closest('.square');
   if (!target) return;
@@ -422,23 +464,28 @@ boardZoomContainer.addEventListener('wheel', onWheel, { passive: false });
 document.addEventListener('pointerdown', onPointerDown);
 document.addEventListener('pointermove', onPointerMove);
 document.addEventListener('pointerup', onPointerUp);
+document.addEventListener('pointercancel', onPointerUp);
 board.addEventListener('dblclick', onDoubleClick);
 
 document.addEventListener('dragstart', function(e) { e.preventDefault(); });
 
 /* Bounds card expand/collapse */
-card.addEventListener('click', function() {
-  this.classList.toggle('expanded');
-  this.setAttribute('aria-expanded', this.classList.contains('expanded'));
-  updateStats();
-});
+if (card) {
+  card.addEventListener('click', function() {
+    this.classList.toggle('expanded');
+    this.setAttribute('aria-expanded', this.classList.contains('expanded'));
+    updateStats();
+  });
+}
 
 /* Delete all squares: show confirmation modal first */
-deleteAllBtn.addEventListener('click', function (e) {
-  e.preventDefault();
-  e.stopPropagation();
-  deleteAllSquares();
-});
+if (deleteAllBtn) {
+  deleteAllBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    deleteAllSquares();
+  });
+}
 
 var fitUndoBtn = document.getElementById('fit-undo-btn');
 var fitRedoBtn = document.getElementById('fit-redo-btn');
@@ -472,59 +519,61 @@ function showToast(message, type) {
 var rulesPanel = document.getElementById('submit-rules');
 var rulesVisible = false;
 
-submitBtn.addEventListener('mouseenter', function() {
-  if (rulesPanel && submitBtn.disabled) {
-    rulesPanel.classList.add('visible');
-    rulesVisible = true;
-  }
-});
-submitBtn.addEventListener('mouseleave', function() {
-  if (rulesPanel) {
-    rulesPanel.classList.remove('visible');
-    rulesVisible = false;
-  }
-});
-
-/* Submit button */
-submitBtn.addEventListener('click', async () => {
-  const data = [];
-  for (let sq of squares) {
-    data.push(roundCornersForSubmit(getSquareCorners(sq)));
-  }
-  if (data.length < MIN_SQUARES) {
-    showToast('Place at least ' + MIN_SQUARES + ' squares to submit.', 'error');
-    return;
-  }
-  if (window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(data.length)) {
-    showToast('Solutions for ' + data.length + ' squares are already known optimal.', 'error');
-    return;
-  }
-  submitBtn.disabled = true;
-  var reasonEl = document.getElementById('submit-reason');
-  if (reasonEl) reasonEl.textContent = 'Submitting…';
-  try {
-    const res = await fetch('/api/fit/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ squares: data })
-    });
-    if (res.ok) {
-      const result = await res.json().catch(() => ({}));
-      const remaining = res.headers.get('X-RateLimit-Remaining');
-      var msg = result.message || 'Solution submitted!';
-      if (remaining !== null) msg += ' (' + remaining + ' remaining)';
-      showToast(msg, 'success');
-    } else {
-      const err = await res.json().catch(() => ({}));
-      showToast(err.error || 'Submission failed.', 'error');
+if (submitBtn) {
+  submitBtn.addEventListener('mouseenter', function() {
+    if (rulesPanel && submitBtn.disabled) {
+      rulesPanel.classList.add('visible');
+      rulesVisible = true;
     }
-  } catch (e) {
-    showToast('Network error, could not submit.', 'error');
-  } finally {
-    submitBtn.disabled = false;
-    updateSubmitButtonState();
-  }
-});
+  });
+  submitBtn.addEventListener('mouseleave', function() {
+    if (rulesPanel) {
+      rulesPanel.classList.remove('visible');
+      rulesVisible = false;
+    }
+  });
+
+  /* Submit button */
+  submitBtn.addEventListener('click', async () => {
+    const data = [];
+    for (let sq of squares) {
+      data.push(roundCornersForSubmit(getSquareCorners(sq)));
+    }
+    if (data.length < MIN_SQUARES) {
+      showToast('Place at least ' + MIN_SQUARES + ' squares to submit.', 'error');
+      return;
+    }
+    if (window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(data.length)) {
+      showToast('Solutions for ' + data.length + ' squares are already known optimal.', 'error');
+      return;
+    }
+    submitBtn.disabled = true;
+    var reasonEl = document.getElementById('submit-reason');
+    if (reasonEl) reasonEl.textContent = 'Submitting…';
+    try {
+      const res = await fetch('/api/fit/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ squares: data })
+      });
+      if (res.ok) {
+        const result = await res.json().catch(() => ({}));
+        const remaining = res.headers.get('X-RateLimit-Remaining');
+        var msg = result.message || 'Solution submitted!';
+        if (remaining !== null) msg += ' (' + remaining + ' remaining)';
+        showToast(msg, 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Submission failed.', 'error');
+      }
+    } catch (e) {
+      showToast('Network error, could not submit.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      updateSubmitButtonState();
+    }
+  });
+}
 
 /* Toolbar minimize/maximize toggle */
 (function initToolbarMinimizeToggle() {

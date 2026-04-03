@@ -61,6 +61,9 @@ if (multiFlagE1) {
     updateStats();
   });
 }
+if (typeof window !== 'undefined' && window.FIT_MOBILE) {
+  multiEnable = false;
+}
 
 /* ── Snap-to-grid ── */
 const MIN_SNAP_GRID_SIZE = 0.0001;
@@ -89,6 +92,10 @@ function initSnapFromDom() {
   }
 }
 initSnapFromDom();
+/* Touch UI has no snap control; use finest grid step for drag/placement. */
+if (typeof window !== 'undefined' && window.FIT_MOBILE) {
+  snapGridSize = MIN_SNAP_GRID_SIZE;
+}
 
 if (snapSizeEl) {
   snapSizeEl.addEventListener('input', function() {
