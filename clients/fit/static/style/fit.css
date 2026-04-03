@@ -562,6 +562,12 @@ a {
   pointer-events: none;
   z-index: 1;
   display: none;
+  overflow: visible;
+}
+
+/* Inline size label (touch game); hidden on desktop — stats panel shows bounds */
+.bounding-box-size {
+  display: none;
 }
 
 /* Square data (selection editor content) */

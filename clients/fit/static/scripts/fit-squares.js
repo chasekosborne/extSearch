@@ -6,6 +6,7 @@
 var MIN_SQUARES = 11;
 
 function updateSubmitButtonState() {
+  if (!submitBtn) return;
   var n = squares.length;
   var isOptimal = window.FIT_OPTIMAL_N && window.FIT_OPTIMAL_N.has(n);
   var tooFew = n < MIN_SQUARES;
@@ -39,14 +40,17 @@ function updateSubmitRulesPanel(n, isOptimal) {
 }
 
 function updateStats() {
-  statCount.textContent = squares.length;
+  if (statCount) statCount.textContent = squares.length;
   updateSubmitButtonState();
-  if (!card) return;
-  const isExpanded = card.classList.contains('expanded');
+
+  var sizeLabel = boundingBox && boundingBox.querySelector('.bounding-box-size');
 
   if (squares.length === 0) {
-    statBounds.textContent = '-';
-    boundingBox.style.display = 'none';
+    if (statBounds) statBounds.textContent = '-';
+    if (boundingBox) {
+      boundingBox.style.display = 'none';
+      if (sizeLabel) sizeLabel.textContent = '';
+    }
     return;
   }
 
@@ -64,21 +68,26 @@ function updateStats() {
   const maxSideRaw = Math.max((maxX - minX) / SQUARE_SIZE, (maxY - minY) / SQUARE_SIZE);
   const maxSide = roundDecimal(maxSideRaw, 5);  /* hundred-thousands place to match manual precision */
 
+  const isExpanded = card && card.classList.contains('expanded');
   const precision = isExpanded ? 5 : 2;
   const maxSideStr = maxSide.toFixed(precision).replace(/\.?0+$/, '');
+  const boundsText = maxSideStr + ' × ' + maxSideStr;
 
-  statBounds.textContent = maxSideStr + ' × ' + maxSideStr;
+  if (statBounds) statBounds.textContent = boundsText;
 
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   const squareSize = maxSide * SQUARE_SIZE;
   const halfSize = squareSize / 2;
 
-  boundingBox.style.display = 'block';
-  boundingBox.style.left = (centerX - halfSize) * zoom + 'px';
-  boundingBox.style.top = (centerY - halfSize) * zoom + 'px';
-  boundingBox.style.width = squareSize * zoom + 'px';
-  boundingBox.style.height = squareSize * zoom + 'px';
+  if (boundingBox) {
+    boundingBox.style.display = 'block';
+    boundingBox.style.left = (centerX - halfSize) * zoom + 'px';
+    boundingBox.style.top = (centerY - halfSize) * zoom + 'px';
+    boundingBox.style.width = squareSize * zoom + 'px';
+    boundingBox.style.height = squareSize * zoom + 'px';
+    if (sizeLabel) sizeLabel.textContent = boundsText;
+  }
 }
 
 function createSquareEl(sq) {
@@ -190,7 +199,7 @@ function removeSquare(id) {
   updateStats();
 }
 
-/* Delete all: confirmation modal + clear logic */
+/* Delete all: confirmation modal + clear logic (optional DOM — touch game omits these) */
 const deleteAllBtn = document.getElementById('delete-all');
 const clearConfirmOverlay = document.getElementById('clear-confirm-overlay');
 const clearConfirmCancel = document.getElementById('clear-confirm-cancel');
@@ -201,8 +210,11 @@ function performClearBoard() {
   board.querySelectorAll('.square').forEach(function (el) { el.remove(); });
   selectedSquareId = null;
   dragState = null;
-  squareData.style.display = 'none';
-  boundingBox.style.display = 'none';
+  if (squareData) {
+    squareData.innerHTML = '';
+    squareData.classList.add('is-empty');
+  }
+  if (boundingBox) boundingBox.style.display = 'none';
   updateStats();
 }
 
@@ -214,28 +226,34 @@ function deleteAllSquares(skipConfirm) {
     performClearBoard();
     return;
   }
-  clearConfirmOverlay.removeAttribute('hidden');
+  if (clearConfirmOverlay) clearConfirmOverlay.removeAttribute('hidden');
 }
 
 function closeClearConfirmModal() {
-  clearConfirmOverlay.setAttribute('hidden', '');
+  if (clearConfirmOverlay) clearConfirmOverlay.setAttribute('hidden', '');
 }
 
-clearConfirmCancel.addEventListener('click', closeClearConfirmModal);
-clearConfirmOk.addEventListener('click', function () {
-  closeClearConfirmModal();
-  if (squares.length > 0) {
-    pushUndoState();
-  }
-  performClearBoard();
-});
+if (clearConfirmCancel) {
+  clearConfirmCancel.addEventListener('click', closeClearConfirmModal);
+}
+if (clearConfirmOk) {
+  clearConfirmOk.addEventListener('click', function () {
+    closeClearConfirmModal();
+    if (squares.length > 0) {
+      pushUndoState();
+    }
+    performClearBoard();
+  });
+}
 
-clearConfirmOverlay.addEventListener('click', function (e) {
-  if (e.target === clearConfirmOverlay) closeClearConfirmModal();
-});
+if (clearConfirmOverlay) {
+  clearConfirmOverlay.addEventListener('click', function (e) {
+    if (e.target === clearConfirmOverlay) closeClearConfirmModal();
+  });
+}
 
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && !clearConfirmOverlay.hasAttribute('hidden')) {
+  if (clearConfirmOverlay && e.key === 'Escape' && !clearConfirmOverlay.hasAttribute('hidden')) {
     closeClearConfirmModal();
   }
 });
@@ -261,6 +279,15 @@ function updateSquare(id, updates) {
 }
 
 function updateAllSquareClasses() {
+  if (typeof window !== 'undefined' && window.FIT_MOBILE) {
+    squares.forEach(function (sq) {
+      const el = board.querySelector('[data-id="' + sq.id + '"]');
+      if (!el) return;
+      el.className = 'square';
+    });
+    return;
+  }
+
   squares.forEach(sq => {
 
     if (multiEnable){

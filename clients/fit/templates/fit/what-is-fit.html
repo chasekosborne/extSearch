@@ -14,13 +14,45 @@ What is Fit? | extSearch
   <h1>What is Fit?</h1>
   <div class="content">
     <p>
-      Fit is an interactive square packing game that challenges players to arrange identical squares within the smallest possible bounded region.
+      Fit is an interactive square packing game that challenges players to arrange identical squares within the smallest possible <strong>square</strong> bounding region.
     </p>
     
     <h2>The Square Packing Problem</h2>
     <p>
-      Square packing is a classic problem in combinatorial optimization and computational geometry. Given a set of identical squares, the goal is to arrange them so that they fit within the smallest possible rectangular bounding box. While this may seem simple at first glance, finding optimal or even near-optimal packings becomes computationally difficult as the number of squares increases.
+      Square packing is a classic problem in combinatorial optimization and computational geometry. Given a set of identical squares, the goal is to arrange them so they fit inside the <strong>smallest possible axis-aligned square</strong> that contains them all (same width and height — the tightest square frame around the group). While this may seem simple at first glance, finding optimal or even near-optimal packings becomes computationally difficult as the number of squares increases.
     </p>
+
+    <figure class="viz-figure" role="img" aria-label="Four identical squares in a long row need a large square bounding frame because the frame must be as wide as it is tall; the same squares in a two-by-two block need a smaller square frame.">
+      <svg class="packing-compare-svg" viewBox="0 0 440 258" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!--
+          Layout: title centered on full width; two columns centered at x=110 and x=330;
+          bboxes share vertical center; 2×2 block centered in its bbox; captions split to avoid overlap.
+          Squares / bboxes colors match in-game .square and .bounding-box (fit.css).
+        -->
+        <text x="220" y="18" text-anchor="middle" fill="#71717a" font-size="13" font-family="system-ui, -apple-system, sans-serif">Same four squares</text>
+        <!-- Row panel: 168×168 bbox centered at (110, 116); row 156×36 centered inside -->
+        <rect x="26" y="32" width="168" height="168" fill="#3b82f6" fill-opacity="0.05" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 4"/>
+        <rect x="32" y="98" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="72" y="98" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="112" y="98" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="152" y="98" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <!-- 2×2 panel: 84×84 bbox centered at (330, 116); block 76×76 centered inside -->
+        <rect x="288" y="74" width="84" height="84" fill="#3b82f6" fill-opacity="0.05" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 4"/>
+        <rect x="292" y="78" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="332" y="78" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="292" y="118" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <rect x="332" y="118" width="36" height="36" fill="#5599ff" stroke="#4477cc" stroke-width="2"/>
+        <text x="110" y="218" text-anchor="middle" fill="#a1a1aa" font-size="11" font-family="system-ui, -apple-system, sans-serif">
+          <tspan x="110" dy="0">Row is wide —</tspan>
+          <tspan x="110" dy="14">square frame must be huge</tspan>
+        </text>
+        <text x="330" y="218" text-anchor="middle" fill="#a1a1aa" font-size="11" font-family="system-ui, -apple-system, sans-serif">
+          <tspan x="330" dy="0">Block is square —</tspan>
+          <tspan x="330" dy="14">minimal square frame</tspan>
+        </text>
+      </svg>
+      <figcaption class="viz-caption">The dashed outline is the smallest <strong>square</strong> (same side length on all sides) that contains every piece. A spread-out row forces a tall square with lots of empty space; a compact block shrinks that square dramatically.</figcaption>
+    </figure>
     
     <p>
       The square packing problem is related to broader questions in discrete geometry, such as circle packing, bin packing, and the more general <em>packing problem</em> where objects of various shapes must be arranged efficiently. These problems have applications in manufacturing, logistics, computer graphics, and materials science.
@@ -28,8 +60,42 @@ What is Fit? | extSearch
     
     <h2>How Fit Works</h2>
     <p>
-      In Fit, players manually place and manipulate squares on a board. Each square can be moved and rotated in 90 degree increments. The challenge is to find arrangements that minimize the bounding box dimensions, the smallest rectangle that can contain all squares.
+      In Fit, players manually place and manipulate squares on a board. Each square can be moved and rotated at <strong>any angle</strong> (floating-point rotation). The challenge is to find arrangements that minimize the side length of the <strong>square</strong> bounding frame that contains all pieces.
     </p>
+
+    <div class="fit-how-visuals" aria-label="Animated hints for Fit controls">
+      <div class="fit-how-block">
+        <p class="viz-lead">Drag one square into place — the square bounding frame shrinks as the layout tightens.</p>
+        <div class="fit-demo-scroll">
+          <div class="fit-demo-board">
+            <div class="fit-demo-bbox" aria-hidden="true"></div>
+            <div class="fit-demo-pointer" aria-hidden="true"></div>
+            <div class="fit-demo-square fit-demo-square--static"><span class="fit-demo-face"></span></div>
+            <div class="fit-demo-square fit-demo-square--static fit-demo-square--b"><span class="fit-demo-face"></span></div>
+            <div class="fit-demo-square fit-demo-square--static fit-demo-square--c"><span class="fit-demo-face"></span></div>
+            <div class="fit-demo-square fit-demo-square--drag"><span class="fit-demo-face"></span></div>
+          </div>
+        </div>
+        <p class="viz-caption">Three squares stay put; the pointer follows the fourth. The dashed frame is always a <strong>square</strong>, matching the smallest enclosing square for the group.</p>
+      </div>
+      <div class="fit-how-block fit-rotate-block" id="fit-rotate-demo">
+        <p class="viz-lead">Double-click the square to enter <strong>rotate mode</strong> — it turns red. Drag to spin it; double-click again to exit rotate mode.</p>
+        <div class="fit-rotate-stage" id="fit-rotate-stage">
+          <p class="fit-rotate-status" id="fit-rotate-status" hidden aria-live="polite">Rotate mode on — drag to rotate. Double-click the square to exit.</p>
+          <div
+            class="fit-rotate-square"
+            id="fit-rotate-square"
+            tabindex="0"
+            role="button"
+            aria-label="Demo square. Double-click to turn rotate mode on or off. When red, drag to rotate."
+            aria-pressed="false"
+          >
+            <span class="fit-demo-face" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p class="viz-caption">In the real game, the same idea applies: rotate mode makes it obvious when you are adjusting angle instead of moving the piece.</p>
+      </div>
+    </div>
     
     <p>
       By allowing players to explore different configurations through direct manipulation, Fit creates an intuitive interface for understanding the structure of square packing solutions. Players can experiment with rotations, positions, and spatial relationships that might not be immediately obvious to algorithmic approaches.
@@ -50,4 +116,106 @@ What is Fit? | extSearch
   </button>
 </main>
 
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var root = document.getElementById('fit-rotate-demo');
+  if (!root) return;
+  var stage = document.getElementById('fit-rotate-stage');
+  var square = document.getElementById('fit-rotate-square');
+  var statusEl = document.getElementById('fit-rotate-status');
+  if (!stage || !square || !statusEl) return;
+
+  var rotateMode = false;
+  var draggingRot = false;
+  var currentDeg = 0;
+  var startPointerRad = 0;
+  var startDeg = 0;
+
+  function setRotationDeg(deg) {
+    if (!Number.isFinite(deg)) return;
+    currentDeg = deg;
+    square.style.setProperty('--fit-rot-deg', deg + 'deg');
+  }
+
+  function centerOfSquare() {
+    var r = square.getBoundingClientRect();
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+  }
+
+  function pointerRad(clientX, clientY) {
+    var c = centerOfSquare();
+    return Math.atan2(clientY - c.cy, clientX - c.cx);
+  }
+
+  function toggleRotateMode() {
+    rotateMode = !rotateMode;
+    square.classList.toggle('is-rotate-mode', rotateMode);
+    square.setAttribute('aria-pressed', rotateMode ? 'true' : 'false');
+    if (rotateMode) {
+      statusEl.hidden = false;
+    } else {
+      statusEl.hidden = true;
+      draggingRot = false;
+      square.classList.remove('is-dragging-rot');
+    }
+  }
+
+  square.addEventListener('dblclick', function (e) {
+    e.preventDefault();
+    toggleRotateMode();
+  });
+
+  square.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleRotateMode();
+    }
+  });
+
+  square.addEventListener('pointerdown', function (e) {
+    if (!rotateMode || e.button !== 0) return;
+    e.preventDefault();
+    draggingRot = true;
+    square.classList.add('is-dragging-rot');
+    startPointerRad = pointerRad(e.clientX, e.clientY);
+    startDeg = currentDeg;
+    try {
+      square.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  });
+
+  square.addEventListener('pointermove', function (e) {
+    if (!draggingRot) return;
+    e.preventDefault();
+    var r = pointerRad(e.clientX, e.clientY);
+    var delta = r - startPointerRad;
+    if (delta > Math.PI) delta -= 2 * Math.PI;
+    if (delta < -Math.PI) delta += 2 * Math.PI;
+    setRotationDeg(startDeg + (delta * 180) / Math.PI);
+  });
+
+  function endDrag(e) {
+    if (!draggingRot) return;
+    draggingRot = false;
+    square.classList.remove('is-dragging-rot');
+    if (e && e.pointerId != null) {
+      try {
+        square.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+  }
+
+  square.addEventListener('pointerup', endDrag);
+  square.addEventListener('pointercancel', endDrag);
+  square.addEventListener('lostpointercapture', function () {
+    draggingRot = false;
+    square.classList.remove('is-dragging-rot');
+  });
+
+  setRotationDeg(0);
+})();
+</script>
 {% endblock %}

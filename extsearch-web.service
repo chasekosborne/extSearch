@@ -1,0 +1,15 @@
+[Unit]
+Description=extSearch main web app
+After=network.target postgresql.service
+
+[Service]
+User=capstone
+Group=capstone
+WorkingDirectory=/home/capstone/extSearch
+EnvironmentFile=/home/capstone/extSearch/.env
+ExecStart=/home/capstone/extSearch/.venv/bin/gunicorn -w 2 -b 127.0.0.1:5000 main:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

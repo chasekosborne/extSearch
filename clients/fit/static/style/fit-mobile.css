@@ -1,0 +1,98 @@
+/* Touch-first Fit: full-viewport grid, minimal chrome, same colors as fit.css */
+
+body.fit-touch-game {
+  overflow: hidden;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+body.fit-touch-game .header {
+  display: none;
+}
+
+body.fit-touch-game .game-container.fit-mobile-game {
+  padding-top: 0;
+  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.fit-touch-game .fit-mobile-game .board-area {
+  order: 0;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+body.fit-touch-game .fit-mobile-game .board-wrapper {
+  min-height: 0;
+}
+
+/* Zoom chip hidden; bounding box visible with size on its bottom edge */
+body.fit-touch-game .fit-mobile-game .board-scale-indicator {
+  display: none !important;
+}
+
+body.fit-touch-game .fit-mobile-game .bounding-box-size {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 4px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #1e40af;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+/* Prevent browser scroll/zoom stealing drags */
+body.fit-touch-game .board-zoom-container,
+body.fit-touch-game .source-square,
+body.fit-touch-game .square {
+  touch-action: none;
+}
+
+/* Bottom dock: add square + submit only */
+.fit-mobile-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px max(14px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.fit-mobile-dock .source-square {
+  flex-shrink: 0;
+}
+
+.fit-mobile-dock .bar-btn-submit {
+  flex: 1 1 auto;
+  max-width: 200px;
+  margin-left: auto;
+  min-height: 48px;
+}
+
+@media (min-width: 600px) and (max-width: 1024px) {
+  .fit-mobile-dock .bar-btn-submit {
+    max-width: 280px;
+  }
+}
+
+body.fit-touch-game .fit-toast {
+  top: max(12px, env(safe-area-inset-top, 0px));
+}
