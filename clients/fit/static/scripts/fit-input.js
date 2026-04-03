@@ -92,34 +92,62 @@ function onPointerDown(e) {
 
     pushUndoState();
 
-    // Select the square
-    selectedSquareId = id;
-    updateAllSquareClasses();
-    updateSquareDataDisplay();
+    if (multiEnable){
+      //if (!selectedSquares) selectedSquares.push(id)
+      if (selectedSquares.indexOf(id) == -1) selectedSquares.push(id);
+      updateAllSquareClasses();
+      updateSquareDataDisplay();
 
-    if (sq.mode === 'rotate') {
       const pt = clientToBoard(e.clientX, e.clientY);
-      const centerX = sq.x + SQUARE_SIZE / 2;
-      const centerY = sq.y + SQUARE_SIZE / 2;
-      const startAngle = Math.atan2(pt.y - centerY, pt.x - centerX);
-      dragState = {
-        type: 'rotate',
-        id: id,
-        startAngle: startAngle,
-        startRotation: sq.rotation
-      };
-      target.style.zIndex = 100;
-      e.preventDefault();
-    } else {
-      const pt = clientToBoard(e.clientX, e.clientY);
-      dragState = {
-        type: 'move',
-        id: id,
-        offsetX: pt.x - sq.x,
-        offsetY: pt.y - sq.y
-      };
-      target.style.zIndex = 100;
-      e.preventDefault();
+        dragState = {
+          type: 'move',
+          id: id,
+          offsetX: pt.x - sq.x,
+          offsetY: pt.y - sq.y
+        }
+
+        offsets.length = 0; // clear the array
+        for (temp of selectedSquares){
+          offsetSq = squares.find(function(s) { return s.id === temp; });
+          offsets.push({x: pt.x - offsetSq.x , y: pt.y - offsetSq.y});
+        }
+        //console.log(offsets[0].x);
+
+        target.style.zIndex = 100;
+        e.preventDefault();
+
+    }else{
+      selectedSquares.length = 0;
+      offsets.length = 0;
+      // Select the square
+      selectedSquareId = id;
+      updateAllSquareClasses();
+      updateSquareDataDisplay();
+
+      if (sq.mode === 'rotate') {
+        const pt = clientToBoard(e.clientX, e.clientY);
+        const centerX = sq.x + SQUARE_SIZE / 2;
+        const centerY = sq.y + SQUARE_SIZE / 2;
+        const startAngle = Math.atan2(pt.y - centerY, pt.x - centerX);
+        dragState = {
+          type: 'rotate',
+          id: id,
+          startAngle: startAngle,
+          startRotation: sq.rotation
+        };
+        target.style.zIndex = 100;
+        e.preventDefault();
+      } else {
+        const pt = clientToBoard(e.clientX, e.clientY);
+        dragState = {
+          type: 'move',
+          id: id,
+          offsetX: pt.x - sq.x,
+          offsetY: pt.y - sq.y
+        };
+        target.style.zIndex = 100;
+        e.preventDefault();
+    }
     }
   }
 }
@@ -137,31 +165,59 @@ function onPointerMove(e) {
     panY = dragState.startPanY - dy;
     applyTransform();
   } else if (dragState.type === 'move') {
-    const pt = clientToBoard(e.clientX, e.clientY);
-    const boardSize = getBoardSize();
-    let x = snapPos(pt.x - dragState.offsetX);
-    let y = snapPos(pt.y - dragState.offsetY);
+    if (multiEnable){
+      let count = 0;
+      for (id of selectedSquares){
+        let pt = clientToBoard(e.clientX, e.clientY);
+        const boardSize = getBoardSize();
 
-    x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
-    y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+        let sq = squares.find(function(s) { return s.id === id; })
 
-    // Check for collisions before updating
-    const sq = squares.find(function(s) { return s.id === dragState.id; });
-    if (sq) {
-      const testSq = { x: x, y: y, rotation: sq.rotation };
-      if (!wouldCollide(testSq, dragState.id)) {
-        updateSquare(dragState.id, { x: x, y: y });
-      } else { // use Separating Axis Theorem to move sqaures flush
-        updateSq = flushSquares(testSq, dragState.id);
-        updateSquare(dragState.id, { x: updateSq.x, y: updateSq.y });
+        let x = snapPos(pt.x - (offsets[count].x));
+        let y = snapPos(pt.y - (offsets[count].y));
+        count += 1;
+
+        x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
+        y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+
+        // Check for collisions before updating
+        if (sq) {
+          const testSq = { x: x, y: y, rotation: sq.rotation };
+          if (!wouldCollide(testSq, id)) {
+            updateSquare(id, { x: x, y: y });
+          } else { // use Separating Axis Theorem to move sqaures flush
+            updateSq = flushSquares(testSq, id);
+            updateSquare(id, { x: updateSq.x, y: updateSq.y });
+          }
+        }
       }
-    }
+    }else{
+      let pt = clientToBoard(e.clientX, e.clientY);
+      const boardSize = getBoardSize();
+      let x = snapPos(pt.x - dragState.offsetX);
+      let y = snapPos(pt.y - dragState.offsetY);
 
-    if (isInDeleteZone(e.clientX, e.clientY)) {
-      deleteZone.classList.add('active');
-    } else {
-      deleteZone.classList.remove('active');
-    }
+      x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
+      y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+
+      // Check for collisions before updating
+      const sq = squares.find(function(s) { return s.id === dragState.id; });
+      if (sq) {
+        const testSq = { x: x, y: y, rotation: sq.rotation };
+        if (!wouldCollide(testSq, dragState.id)) {
+          updateSquare(dragState.id, { x: x, y: y });
+        } else { // use Separating Axis Theorem to move sqaures flush
+          updateSq = flushSquares(testSq, dragState.id);
+          updateSquare(dragState.id, { x: updateSq.x, y: updateSq.y });
+        }
+      }
+
+      if (isInDeleteZone(e.clientX, e.clientY)) {
+        deleteZone.classList.add('active');
+      } else {
+        deleteZone.classList.remove('active');
+      }
+  }
   } else if (dragState.type === 'rotate') {
     const pt = clientToBoard(e.clientX, e.clientY);
     const sq = squares.find(function(s) { return s.id === dragState.id; });
@@ -190,9 +246,11 @@ function onPointerMove(e) {
 function flushSquares(testSq, draggedID, fallbackSq = { x: 0, y: 0 }, arrayID = new Array()){
     let collisionSq = wouldCollideWith(testSq, draggedID); // get square that is being collided with
 
-    tempSq = squares.find(function(s) { return s.id === dragState.id; });
-    fallbackSq.x = tempSq.x;
-    fallbackSq.y = tempSq.y;
+    if (fallbackSq.x == 0 && fallbackSq.y == 0){
+      tempSq = squares.find(function(s) { return s.id === draggedID; });
+      fallbackSq.x = tempSq.x;
+      fallbackSq.y = tempSq.y;
+    }
 
     if (arrayID.indexOf(collisionSq.id) != -1){ // if square has already been collided with and moved away from before
       return fallbackSq; // cancel flush movement

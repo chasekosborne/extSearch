@@ -262,19 +262,38 @@ function updateSquare(id, updates) {
 
 function updateAllSquareClasses() {
   squares.forEach(sq => {
-    const el = board.querySelector('[data-id="' + sq.id + '"]');
-    if (!el) return;
 
-    let className = 'square';
-    if (sq.mode === 'rotate') {
-      className += ' mode-rotate';
+    if (multiEnable){
+      const el = board.querySelector('[data-id="' + sq.id + '"]');
+      if (!el) return;
+
+      let className = 'square';
+      if (sq.mode === 'rotate') {
+        className += ' mode-rotate';
+      }
+      if (selectedSquares.indexOf(sq.id) != -1) {
+        className += ' selected';
+      } else {
+        className += ' not-selected';
+      }
+      el.className = className;
+
+    }else{
+      const el = board.querySelector('[data-id="' + sq.id + '"]');
+      if (!el) return;
+
+      let className = 'square';
+      if (sq.mode === 'rotate') {
+        className += ' mode-rotate';
+      }
+      if (selectedSquareId === sq.id) {
+        className += ' selected';
+      } else if (selectedSquareId !== null || (dragState && dragState.id !== sq.id)) {
+        className += ' not-selected';
+      }
+      el.className = className;
     }
-    if (selectedSquareId === sq.id) {
-      className += ' selected';
-    } else if (selectedSquareId !== null || (dragState && dragState.id !== sq.id)) {
-      className += ' not-selected';
-    }
-    el.className = className;
+
   });
 }
 
