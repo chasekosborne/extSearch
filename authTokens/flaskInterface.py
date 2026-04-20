@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 ### NOTE: Using Flask-Session extension to maintain SERVER-SIDE sessions. (pip install flask flask-session),(pip install python-memcached)
 from flask import Flask,render_template,redirect,request,session,jsonify
+from flask import Blueprint
 from flask_session import Session
-from authServer import *
+from authTokens.authServer import *
 from functools import wraps
 from datetime import datetime
 
@@ -10,13 +11,21 @@ IP_ADDR = "127.0.0.1"
 PORT = 3297 # 'Auth' -> numeric
 AUTH_INTERFACE = AuthInterface()
 
-app = Flask(__name__)
+# app = Flask(__name__)
 
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
+auth_bp = Blueprint(
+    "auth",
+    __name__,
+    url_prefix="/auth"
+)
+
+def init_session(app): # Call from app factory
+    app.config["SESSION_PERMANENT"] = False
+    app.config["SESSION_TYPE"] = "filesystem"
+    Session(app)
 
 # ONLY USE SESSIONS AS AN INTERMEDIATE STEP FOR LOGIN, SIGNUP. ONLY STORE INTERMEDIATE VALUES, CLEAR AFTER.
-Session(app) # Init using server-side seesion. Note, user now sends a session cookie which is associated with a flask session.
+# Session(app) # Init using server-side seesion. Note, user now sends a session cookie which is associated with a flask session.
 
 
 
@@ -49,7 +58,7 @@ def clear_session_state(*state_keys):
 
 
 ##### CONFIGURATION - INTERFACE
-@app.route('/auth/signup/first', methods=['GET'])
+@auth_bp.route('/signup/first', methods=['GET'])
 def signup_first():
     """
     First step of signup flow: Generate and return salt for client-side hashing.
@@ -79,7 +88,7 @@ def signup_first():
         return jsonify({"error": "Signup first step failed"}), 500
 
 
-@app.route('/auth/signup/second', methods=['POST'])
+@auth_bp.route('/signup/second', methods=['POST'])
 @require_session_state('signup_first')
 def signup_second():
     """
@@ -141,7 +150,7 @@ def signup_second():
 # LOGIN ENDPOINTS
 # ============================================================================
 
-@app.route('/auth/login/first', methods=['POST'])
+@auth_bp.route('/login/first', methods=['POST'])
 def login_first():
     """
     First step of login flow: Return salt and challenges for client-side auth.
@@ -191,7 +200,7 @@ def login_first():
         return jsonify({"error": "Login first step failed"}), 500
 
 
-@app.route('/auth/login/second', methods=['POST'])
+@auth_bp.route('/login/second', methods=['POST'])
 @require_session_state('login_first')
 def login_second():
     """
@@ -250,7 +259,7 @@ def login_second():
 # TOKEN AUTHENTICATION ENDPOINT
 # ============================================================================
 
-@app.route('/auth/token/get', methods=['POST'])
+@auth_bp.route('/token/get', methods=['POST'])
 def getToken_first():
     """ 
     Uses indexServer token to fetch a token for another service
@@ -302,7 +311,7 @@ def getToken_first():
         print(f"[{datetime.now()}] POST /auth/token/get - ERROR: {str(e)}")
         return jsonify({"error": "Token verification failed"}), 500
 
-@app.route('/auth/token/verify', methods=['POST'])
+@auth_bp.route('/token/verify', methods=['POST'])
 def token_auth():
     """
     Single-step token authentication: Verify an existing auth token.
@@ -355,7 +364,7 @@ def token_auth():
 # HEALTH CHECK ENDPOINT
 # ============================================================================
 
-@app.route('/auth/health', methods=['GET'])
+@auth_bp.route('/health', methods=['GET'])
 def health_check():
     """Simple health check endpoint to verify service is running."""
     print(f"[{datetime.now()}] GET /auth/health - Health check")
@@ -366,7 +375,7 @@ def health_check():
 # SESSION MANAGEMENT ENDPOINTS
 # ============================================================================
 
-@app.route('/auth/session/clear', methods=['POST'])
+@auth_bp.route('/session/clear', methods=['POST'])
 def clear_session():
     """Clear all auth session state (useful for aborting flows)."""
     try:
@@ -383,13 +392,13 @@ def clear_session():
 # ERROR HANDLERS
 # ============================================================================
 
-@app.errorhandler(404)
+@auth_bp.errorhandler(404)
 def not_found(error):
     print(f"[{datetime.now()}] 404 - Endpoint not found")
     return jsonify({"error": "Endpoint not found"}), 404
 
 
-@app.errorhandler(405)
+@auth_bp.errorhandler(405)
 def method_not_allowed(error):
     print(f"[{datetime.now()}] 405 - Method not allowed")
     return jsonify({"error": "Method not allowed"}), 405

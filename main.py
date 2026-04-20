@@ -19,6 +19,11 @@ def create_app():
     app.register_blueprint(index_bp)
     app.register_blueprint(fit_bp)
 
+    from authTokens.flaskInterface import auth_bp,init_session
+
+    init_session(app)
+    app.register_blueprint(auth_bp)
+
     @app.context_processor
     def inject_user():
         return {
@@ -33,4 +38,4 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,threaded=False)

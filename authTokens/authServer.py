@@ -36,7 +36,7 @@ class AuthServ:
     
     def __init__(this):
         firstRun = not path.isfile("./auth.sqlite")
-        this.authDb = db.connect("auth.sqlite")
+        this.authDb = db.connect("auth.sqlite", check_same_thread=False)
         this.authDb.execute('PRAGMA foreign_keys = ON') # Needed for cross table checks
 
         if firstRun: # Setup userDb
