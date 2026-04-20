@@ -1,38 +1,147 @@
 {% extends "base.html" %}
 
-{% block title %}
-Login
-{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block link %}
-    <link rel="stylesheet" href="{{ url_for('index.static', filename='style/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('index.static', filename='style/login.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="login-page">
-    <div class="login-container">
-        <h2 style="text-align:center; display: block; margin-top: 16px;" >Login</h2>
-        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
-        
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+  <div class="login-container">
+    <h2 class="title">Login</h2>
 
-        <form method="POST" class="login-form" action="{{ url_for('index.login') }}">
-            <label for="username">Username</label>
-            <input type="text" name="username" required>
+    <div id="msg" class="msg"></div>
 
-            <label for="password">Password</label>
-            <input type="password" name="password" required>
+    <form id="loginForm" class="login-form" autocomplete="off">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required>
 
-            <button type="submit">Login</button>
-        </form>
-        
-        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
-        <p style="text-align: center; color: #71717a; font-size: 14px;">
-            Don't have an account? <a href="{{ url_for('index.register') }}" style="color: #5599ff;">Create one</a>
-        </p>
-    </div>
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" name="pwd" required>
+
+      <button type="submit">Login</button>
+    </form>
+
+    <p class="footer">
+      Don’t have an account?
+      <a href="{{ url_for('index.register') }}">Create one</a>
+    </p>
+  </div>
 </div>
 
+<script>
+/* -------------------------------------------------
+   SHA‑256 helper (Web Crypto API)
+   ------------------------------------------------- */
+// async function sha256(...parts) {
+//   const encoder = new TextEncoder();
+//   const data = encoder.encode(parts.join(''));
+//   const hashBuf = await crypto.subtle.digest('SHA-256', data);
+//   return Array.from(new Uint8Array(hashBuf))
+//               .map(b => b.toString(16).padStart(2, '0'))
+//               .join('');
+// }
+async function sha256(...inputs) {
+  const encoder = new TextEncoder();
+
+  // 1️⃣ Force every argument to its *string* representation,
+  //    exactly like Python's ``str(each)``.
+  const data = inputs
+    .map(i => encoder.encode(String(i)))   // <-- conversion added
+    .reduce((acc, cur) => {
+      const tmp = new Uint8Array(acc.length + cur.length);
+      tmp.set(acc, 0);
+      tmp.set(cur, acc.length);
+      return tmp;
+    }, new Uint8Array());
+
+  // 2️⃣ Compute the hash
+  const hash = await crypto.subtle.digest('SHA-256', data);
+
+  // 3️⃣ Convert to lower‑case hex (same as Python's .hexdigest())
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/* -------------------------------------------------
+   Step 1 – request salt & single challenge
+   ------------------------------------------------- */
+async function loginFirst(username) {
+  const resp = await fetch('/auth/login/first', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username })
+  });
+  return resp.json();
+}
+
+/* -------------------------------------------------
+   Step 2 – compute proof for the single challenge
+   ------------------------------------------------- */
+async function loginSecond(firstState, password) {
+  // 1️⃣ pwdHash = SHA256(password, salt)
+  const pwdHash = await sha256(password, firstState.salt);
+
+  // 2️⃣ challenge is a single string (not an array)
+  const challenge = firstState.challenges;
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  // 3️⃣ result = SHA256(pwdHash, timestamp, challenge)
+  // console.log("Hashing: ",pwdHash,timestamp.toString(),challenge)
+  const result = await sha256(pwdHash, timestamp.toString(), challenge);
+
+  const resp = await fetch('/auth/login/second', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      timestamps: timestamp,   // single number
+      results:   result        // single string
+    })
+  });
+  return resp.json();
+}
+
+/* -------------------------------------------------
+   Form handler
+   ------------------------------------------------- */
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const user = document.getElementById('username').value.trim();
+  const pwd  = document.getElementById('pwd').value;
+  const msg  = document.getElementById('msg');
+  msg.textContent = '';
+
+  try {
+    // ---- first step -------------------------------------------------
+    const first = await loginFirst(user);
+    if (first.error) throw new Error(first.error);
+
+    // ---- second step ------------------------------------------------
+    const second = await loginSecond(first, pwd);
+    if (second.error) throw new Error(second.error);
+
+    // success – server returns auth token as [head, tail]
+    const [head, tail] = second.authToken;
+
+    // Store each part under its own key
+    localStorage.setItem('authHead', head);
+    localStorage.setItem('authTail', tail);
+
+    msg.style.color = '#16a34a';
+    msg.textContent = 'Login successful!';
+  }
+  catch (err) {
+    msg.style.color = '#dc2626';
+    msg.textContent = err.message;
+  }
+});
+</script>
+
+<style>
+.title  { text-align:center; margin-top:16px; }
+.msg    { margin:12px 0; font-weight:bold; }
+.footer { text-align:center; color:#71717a; font-size:14px; margin-top:16px; }
+</style>
 {% endblock %}

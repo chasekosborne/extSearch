@@ -49,7 +49,7 @@ def game_mobile():
 
 @fit_bp.route("/fit/api")
 def fit_api():
-    return render_template("fit/api.html")
+    return render_template("fit/apiNew.html")
 
 
 @fit_bp.route("/solution")

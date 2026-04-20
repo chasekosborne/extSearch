@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block link %}
+    <link rel="stylesheet" href="{{ url_for('index.static', filename='style/home.css') }}">
+    <style>
+        .api-section { margin-top: 40px; }
+        .api-section h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+        .api-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; margin-top: 24px; color: #27272a; }
+        .endpoint { margin-bottom: 32px; }
+        .method-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600;
+            color: #fff; margin-right: 8px;
+        }
+        .method-post { background: #22c55e; }
+        .method-get { background: #3b82f6; }
+        .api-path {
+            font-family: 'DM Mono', monospace; font-size: 14px;
+            background: #f5f5f5; padding: 2px 8px; border-radius: 4px;
+        }
+        .api-desc { color: #71717a; font-size: 14px; margin: 8px 0 12px; }
+        .code-block {
+            background: #1a1a2e; color: #e5e5e5; border-radius: 8px;
+            padding: 20px 24px; overflow-x: auto; font-family: 'DM Mono', monospace;
+            font-size: 13.5px; line-height: 1.75; margin-bottom: 16px;
+            white-space: pre; tab-size: 4;
+        }
+        .code-block .cm { color: #6b7280; font-style: italic; }
+        .code-block .s { color: #86efac; }
+        .code-block .kw { color: #93c5fd; }
+        .code-block .fn { color: #c4b5fd; }
+        .code-block .nb { color: #fbbf24; }
+        .response-block {
+            background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 8px;
+            padding: 16px; margin-bottom: 16px;
+        }
+        .response-block pre {
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            color: #1a1a1a; overflow-x: auto; margin: 0;
+        }
+        .response-block p { font-weight: 500; margin-bottom: 8px; font-size: 13px; color: #1a1a1a; }
+        .tab-bar { display: flex; gap: 0; margin-bottom: 0; }
+        .tab-btn {
+            padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+            border: 1px solid #e5e5e5; border-bottom: none; background: #f5f5f5;
+            color: #71717a; border-radius: 8px 8px 0 0; transition: all 0.15s;
+        }
+        .tab-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-code-block { border-radius: 0 8px 8px 8px; margin-top: 0; }
+        .rate-info {
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+            padding: 12px 16px; font-size: 14px; color: #92400e; margin: 16px 0;
+        }
+        .data-format-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+        .data-format-table th { text-align: left; padding: 8px 12px; background: #f5f5f5; border: 1px solid #e5e5e5; font-weight: 600; }
+        .data-format-table td { padding: 8px 12px; border: 1px solid #e5e5e5; }
+        .data-format-table code { background: #f5f5f5; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+        .step-number {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%; background: #1a1a1a;
+            color: #fff; font-size: 12px; font-weight: 600; margin-right: 8px;
+        }
+        .back-button {
+            margin-top: 32px; padding: 10px 16px; border-radius: 8px;
+            border: 1px solid #e5e5e5; background: #f5f5f5; color: #1a1a1a;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .back-button:hover { background: #ececec; border-color: #d4d4d4; }
+    </style>
+{% endblock %}
+
+{% block title %}Auth Service API Documentation{% endblock %}
+
+{% block content %}
+<main class="page api-docs">
+    <h1>Auth Service API</h1>
+    <p>All routes are prefixed with <code>/auth</code>. The service runs on <code>http://127.0.0.1:3297</code> when started locally.</p>
+
+    <hr>
+
+    <!-- ==================== SIGN‑UP ==================== -->
+    <section id="signup">
+        <h2>Signup Flow</h2>
+
+        <h3>1️⃣ <code>GET /auth/signup/first</code></h3>
+        <p>Generate a per‑session salt for client‑side password hashing.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>GET /auth/signup/first HTTP/1.1
+Host: 127.0.0.1:3297
+Cookie: session=&lt;session‑id&gt;
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (200)</summary>
+            <pre><code>{
+    "salt": "&lt;hex‑encoded salt&gt;",
+    "sessionId": "&lt;session cookie value&gt;"
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>500 – Internal server error (message: <code>"Signup first step failed"</code>)</li>
+            </ul>
+        </details>
+
+        <h3>2️⃣ <code>POST /auth/signup/second</code></h3>
+        <p>Create the user using the previously‑generated salt and return an auth token.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>POST /auth/signup/second HTTP/1.1
+Host: 127.0.0.1:3297
+Content-Type: application/json
+Cookie: session=&lt;session‑id&gt;
+
+{
+    "passwordHash": "&lt;client‑hashed password&gt;",
+    "username": "alice",
+    "email": "alice@example.com"   // optional
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (201)</summary>
+            <pre><code>{
+    "authToken": ["&lt;authHead&gt;", "&lt;authTail&gt;"]
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>400 – Missing required fields</li>
+                <li>409 – User creation failed (e.g., duplicate username)</li>
+                <li>500 – Unexpected server error</li>
+            </ul>
+        </details>
+    </section>
+
+    <hr>
+
+    <!-- ==================== LOGIN ==================== -->
+    <section id="login">
+        <h2>Login Flow</h2>
+
+        <h3>1️⃣ <code>POST /auth/login/first</code></h3>
+        <p>Retrieve the stored salt and a set of challenges for the supplied user.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>POST /auth/login/first HTTP/1.1
+Host: 127.0.0.1:3297
+Content-Type: application/json
+
+{
+    "username": "alice"          // or "email": "alice@example.com"
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (200)</summary>
+            <pre><code>{
+    "salt": "&lt;hex‑salt&gt;",
+    "challenges": "&lt;challenge‑data&gt;",
+    "sessionId": "&lt;session‑id&gt;",
+    "servTime": 1734768392.123
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>400 – Username or email missing</li>
+                <li>404 – User not found</li>
+                <li>500 – Internal error</li>
+            </ul>
+        </details>
+
+        <h3>2️⃣ <code>POST /auth/login/second</code></h3>
+        <p>Submit the solved challenges to obtain an auth token.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>POST /auth/login/second HTTP/1.1
+Host: 127.0.0.1:3297
+Content-Type: application/json
+Cookie: session=&lt;session‑id&gt;
+
+{
+    "timestamps": [1629384000, 1629384010],
+    "results":   ["&lt;hash1&gt;", "&lt;hash2&gt;"]
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (200)</summary>
+            <pre><code>{
+    "authToken": ["&lt;authHead&gt;", "&lt;authTail&gt;"]
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>400 – Missing timestamps or results</li>
+                <li>401 – Authentication failed</li>
+                <li>500 – Unexpected error</li>
+            </ul>
+        </details>
+    </section>
+
+    <hr>
+
+    <!-- ==================== TOKEN ENDPOINTS ==================== -->
+    <section id="tokens">
+        <h2>Token Management</h2>
+
+        <h3><code>POST /auth/token/get</code></h3>
+        <p>Validate an existing <em>indexServer</em> token and spawn a token for another service.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>POST /auth/token/get HTTP/1.1
+Host: 127.0.0.1:3297
+Content-Type: application/json
+
+{
+    "authHead": "&lt;head&gt;",
+    "timestamps": "1629384000",
+    "challenges": "&lt;challenge‑blob&gt;",
+    "results": "&lt;result‑blob&gt;",
+    "targetServer": "myService",
+    "expiry": 3600               // optional, seconds
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (200)</summary>
+            <pre><code>{
+    "authToken": ["&lt;newHead&gt;", "&lt;newTail&gt;"]
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>400 – Missing required fields</li>
+                <li>401 – Token verification failed</li>
+                <li>500 – Server error</li>
+            </ul>
+        </details>
+
+        <h3><code>POST /auth/token/verify</code></h3>
+        <p>Single‑step verification of any auth token.</p>
+        <details>
+            <summary>Request</summary>
+            <pre><code>POST /auth/token/verify HTTP/1.1
+Host: 127.0.0.1:3297
+Content-Type: application/json
+
+{
+    "authHead": "&lt;head&gt;",
+    "sourceServer": "indexServer",
+    "timestamps": [1629384000],
+    "challenges": "&lt;challenge‑blob&gt;",
+    "results": ["&lt;result‑blob&gt;"],
+    "timeRecieveds": 1629384012   // optional
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Response (200)</summary>
+            <pre><code>{
+    "verified": true,
+    "result": "&lt;authTail&gt;"
+}
+</code></pre>
+        </details>
+
+        <details>
+            <summary>Possible Errors</summary>
+            <ul>
+                <li>400 – Missing fields</li>
+                <li>401 – Verification failed</li>
+                <li>500 – Server error</li>
+            </ul>
+        </details>
+    </section>
+
+    <hr>
+
+    <!-- ==================== HASHING DETAILS ==================== -->
+    <section id="hashing">
+        <h2>Client‑Side Hashing</h2>
+        <p>The client never sends plain passwords.  It uses the helper script below to produce a hash that combines three pieces of data:</p>
+
+        <pre><code>#!/usr/bin/python
+from authServer import hashCompute
+from time import time
+
+if __name__ == "__main__":
+    print("Input in order: LocalHash/AuthHead(,Tail),timestamp,challenge ")
+    print("Current time :", time())
+    key = input("1 >")
+    timestamp = input("2 >")
+    challenge = input("3 >")
+
+    print(hashCompute(key, timestamp, challenge))
+</code></pre>
+
+        <h3>What <code>hashCompute</code> does</h3>
+        <ul>
+            <li><strong>Inputs</strong>
+                <ul>
+                    <li><code>key</code> – the <em>local hash</em> (for signup) <strong>or</strong> the <em>authHead</em> (for login/token verification).</li>
+                    <li><code>timestamp</code> – the Unix epoch time when the computation is performed (as a string or number).</li>
+                    <li><code>challenge</code> – the challenge string returned by <code>/auth/login/first</code> or <code>/auth/token/get</code>.</li>
+                </ul>
+            </li>
+            <li><strong>Algorithm</strong> – The function concatenates the three values and applies a cryptographic hash (currently <code>SHA‑256</code>) to the resulting bytes:
+                <pre><code>hash = SHA256( f"{key}{timestamp}{challenge}".encode('utf‑8') ).hexdigest()
+</code></pre>
+                The output is a 64‑character hexadecimal string used as <code>passwordHash</code> (signup) or as an element of the <code>results</code> array (login / token verification).</li>
+            <li><strong>Why it matters</strong> – By mixing the server‑issued <code>salt</code>/<code>challenge</code> with a time‑varying value, replay attacks are prevented and the server can verify the hash without ever seeing the raw password.</li>
+        </ul>
+    </section>
+
+    <hr>
+
+    <!-- ==================== ADMIN / HEALTH ==================== -->
+    <section id="admin">
+        <h2>Health & Session Management</h2>
+
+        <h3><code>GET /auth/health</code></h3>
+        <p>Liveness probe.</p>
+        <pre><code>{
+    "status": "healthy",
+    "service": "AuthService"
+}
+</code></pre>
+
+        <h3><code>POST /auth/session/clear</code></h3>
+        <p>Clear any stored signup/login state and wipe the Flask session.</p>
+        <pre><code>{
+    "message": "Session cleared"
+}
+</code></pre>
+    </section>
+
+    <hr>
+
+    <!-- ==================== ERROR HANDLERS ==================== -->
+    <section id="errors">
+        <h2>Standard Error Responses</h2>
+        <table>
+            <thead>
+                <tr><th>Status</th><th>Condition</th><th>Body</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>404</td>
+                    <td>Endpoint not found</td>
+                    <td><code>{"error":"Endpoint not found"}</code></td>
+                </tr>
+                <tr>
+                    <td>405</td>
+                    <td>Method not allowed</td>
+                    <td><code>{"error":"Method not allowed"}</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+{% endblock %}
