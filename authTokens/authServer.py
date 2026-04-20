@@ -112,8 +112,10 @@ class AuthServ:
         # hash.update((str(userFetch[0])+str(timestamps)+str(challenges)).encode('utf-8'))
         # testResult = hash.hexdigest()
 
-        testResult = hashCompute(userFetch["password_hash"],timestamps,challenges)
-        print(testResult)
+        # print("Testing against:",userFetch["password_hash"],int(timestamps),challenges)
+        testResult = hashCompute(userFetch["password_hash"],int(timestamps),challenges)
+        # print(testResult)
+        # print(results)
 
         if testResult == results:
             print("User auth succeeded...")

@@ -1,43 +1,135 @@
 {% extends "base.html" %}
 
-{% block title %}
-Create Account
-{% endblock %}
+{% block title %}Create Account{% endblock %}
 
 {% block link %}
-    <link rel="stylesheet" href="{{ url_for('index.static', filename='style/login.css') }}">
+<link rel="stylesheet" href="{{ url_for('index.static', filename='style/login.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="login-page">
-    <div class="login-container">
-        <h2 style="text-align:center; display: block; margin-top: 16px;">Create Account</h2>
-        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
+  <div class="login-container">
+    <h2 style="text-align:center;margin-top:16px;">Create Account</h2>
+    <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;">
 
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
 
-        <form method="POST" class="login-form" action="{{ url_for('index.register') }}">
-            <label for="username">Username</label>
-            <input type="text" name="username" id="username" required autocomplete="username"
-                   minlength="2" maxlength="64" pattern="[a-zA-Z0-9_-]+"
-                   title="Letters, numbers, underscores, hyphens only">
+    <!-- The form is now **purely static** – all work is done via JavaScript -->
+    <form id="signupForm" class="login-form" autocomplete="off">
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" required autocomplete="username"
+             minlength="2" maxlength="64" pattern="[a-zA-Z0-9_-]+"
+             title="Letters, numbers, underscores, hyphens only">
 
-            <label for="email">Email</label>
-            <input type="email" name="email" id="email" required autocomplete="email">
+      <label for="email">Email (optional)</label>
+      <input type="email" name="email" id="email" autocomplete="email">
 
-            <label for="password">Password</label>
-            <input type="password" name="password" id="password" required autocomplete="new-password"
-                   minlength="8" title="At least 8 characters">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" required autocomplete="new-password"
+             minlength="8" title="At least 8 characters">
 
-            <button type="submit">Create Account</button>
-        </form>
+      <button type="submit">Create Account</button>
+    </form>
 
-        <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
-        <p style="text-align: center; color: #71717a; font-size: 14px;">
-            Already have an account? <a href="{{ url_for('index.login') }}" style="color: #5599ff;">Log in</a>
-        </p>
-    </div>
+    <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;">
+    <p style="text-align:center;color:#71717a;font-size:14px;">
+      Already have an account? <a href="{{ url_for('index.login') }}" style="color:#5599ff;">Log in</a>
+    </p>
+  </div>
 </div>
+
+<script type="module">
+  // -------------------------------------------------------------
+  // Helper: SHA‑256 using Web Crypto API (returns hex string)
+  // -------------------------------------------------------------
+  async function sha256Hex(...inputs) {
+  const encoder = new TextEncoder();
+
+  // 1️⃣ Force every argument to its *string* representation,
+  //    exactly like Python's ``str(each)``.
+  const data = inputs
+    .map(i => encoder.encode(String(i)))   // <-- conversion added
+    .reduce((acc, cur) => {
+      const tmp = new Uint8Array(acc.length + cur.length);
+      tmp.set(acc, 0);
+      tmp.set(cur, acc.length);
+      return tmp;
+    }, new Uint8Array());
+
+  // 2️⃣ Compute the hash
+  const hash = await crypto.subtle.digest('SHA-256', data);
+
+  // 3️⃣ Convert to lower‑case hex (same as Python's .hexdigest())
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+    }
+
+  // -------------------------------------------------------------
+  // Main signup flow (two‑step as required by the server)
+  // -------------------------------------------------------------
+  document.getElementById('signupForm').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const email    = document.getElementById('email').value.trim() || null;
+    const pwd      = document.getElementById('password').value;
+
+    // -----------------------------------------------------------------
+    // 1️⃣  GET /auth/signup/first  →  receives a salt (and sessionId)
+    // -----------------------------------------------------------------
+    let firstResp;
+    try {
+      const r = await fetch('/auth/signup/first', {method: 'GET', credentials: 'include'});
+      firstResp = await r.json();
+      if (!r.ok) throw new Error(firstResp.error ?? 'Failed first step');
+    } catch (err) {
+      alert('Unable to start signup: ' + err.message);
+      return;
+    }
+
+    const salt = firstResp.salt;   // string sent by server
+
+    // -----------------------------------------------------------------
+    // 2️⃣  Compute passwordHash = SHA256(password, salt)
+    // -----------------------------------------------------------------
+    const passwordHash = await sha256Hex(pwd, salt);
+
+    // -----------------------------------------------------------------
+    // 3️⃣  POST /auth/signup/second   (payload as JSON)
+    // -----------------------------------------------------------------
+    const payload = {
+      passwordHash,
+      username,
+      email          // optional – server will ignore if null
+    };
+
+    let secondResp;
+    try {
+      const r = await fetch('/auth/signup/second', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      secondResp = await r.json();
+      if (!r.ok) throw new Error(secondResp.error ?? 'Failed second step');
+    } catch (err) {
+      alert('Signup failed: ' + err.message);
+      return;
+    }
+
+    // -----------------------------------------------------------------
+    // 4️⃣  Server returns {"authToken": ["head","tail"]}  → store locally
+    // -----------------------------------------------------------------
+    const [authHead, authTail] = secondResp.authToken;
+    localStorage.setItem('authHead', authHead);
+    localStorage.setItem('authTail', authTail);
+
+    // Optionally redirect to the protected area
+    window.location.href = '/';
+  });
+</script>
 {% endblock %}

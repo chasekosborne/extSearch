@@ -34,13 +34,35 @@
 /* -------------------------------------------------
    SHA‑256 helper (Web Crypto API)
    ------------------------------------------------- */
-async function sha256(...parts) {
+// async function sha256(...parts) {
+//   const encoder = new TextEncoder();
+//   const data = encoder.encode(parts.join(''));
+//   const hashBuf = await crypto.subtle.digest('SHA-256', data);
+//   return Array.from(new Uint8Array(hashBuf))
+//               .map(b => b.toString(16).padStart(2, '0'))
+//               .join('');
+// }
+async function sha256(...inputs) {
   const encoder = new TextEncoder();
-  const data = encoder.encode(parts.join(''));
-  const hashBuf = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuf))
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join('');
+
+  // 1️⃣ Force every argument to its *string* representation,
+  //    exactly like Python's ``str(each)``.
+  const data = inputs
+    .map(i => encoder.encode(String(i)))   // <-- conversion added
+    .reduce((acc, cur) => {
+      const tmp = new Uint8Array(acc.length + cur.length);
+      tmp.set(acc, 0);
+      tmp.set(cur, acc.length);
+      return tmp;
+    }, new Uint8Array());
+
+  // 2️⃣ Compute the hash
+  const hash = await crypto.subtle.digest('SHA-256', data);
+
+  // 3️⃣ Convert to lower‑case hex (same as Python's .hexdigest())
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /* -------------------------------------------------
@@ -67,6 +89,7 @@ async function loginSecond(firstState, password) {
   const timestamp = Math.floor(Date.now() / 1000);
 
   // 3️⃣ result = SHA256(pwdHash, timestamp, challenge)
+  // console.log("Hashing: ",pwdHash,timestamp.toString(),challenge)
   const result = await sha256(pwdHash, timestamp.toString(), challenge);
 
   const resp = await fetch('/auth/login/second', {
