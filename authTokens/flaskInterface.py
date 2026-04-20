@@ -1,4 +1,4 @@
-#!./test/bin/python3
+#!/usr/bin/env python
 ### NOTE: Using Flask-Session extension to maintain SERVER-SIDE sessions. (pip install flask flask-session),(pip install python-memcached)
 from flask import Flask,render_template,redirect,request,session,jsonify
 from flask_session import Session
@@ -249,6 +249,58 @@ def login_second():
 # ============================================================================
 # TOKEN AUTHENTICATION ENDPOINT
 # ============================================================================
+
+@app.route('/auth/token/get', methods=['POST'])
+def getToken_first():
+    """ 
+    Uses indexServer token to fetch a token for another service
+
+    Expected JSON:
+    {
+        "authHead": "...",
+        "timestamps":"...",
+        "challenges":"...",
+        "results":"..."
+        "targetServer":"..."
+        "expiry":"..." (optional)
+    }
+
+    Returns: 
+        JSON with auth token
+    """
+
+    try:
+        data = request.get_json()
+        print(f"[{datetime.now()}] POST /auth/token/get - Verifying token, spawning token to {data.get('targetServer')}")
+
+        required = ['authHead', 'timestamps', 'challenges', 'results','targetServer']
+        if not all(k in data for k in required):
+            print(f"[{datetime.now()}] POST /auth/token/verify - Missing required fields")
+            return jsonify({"error": "Missing required fields"}), 400
+
+        result = AUTH_INTERFACE.tokenAuth(
+            authHead=data['authHead'],
+            sourceServer="indexServer", # ONLY ACCEPTS INDEX-SERVER TOKENS, indexServer tail never passed in the future to avoid auth issues
+            timestamps=float(data['timestamps']),
+            challenges=data['challenges'],
+            results=data['results'],
+            timeRecieveds=time() # No async for token spawn
+        )
+
+        if not result:
+            print(f"[{datetime.now()}] POST /auth/token/get - Token verification failed")
+            return jsonify({"error": "Token verification failed"}), 401
+
+        print(f"[{datetime.now()}] POST /auth/token/get - Token verified successfully")
+
+        targetUser = AUTH_INTERFACE.tokenLookup(data['authHead'])
+        result2 = AUTH_INTERFACE.tokenSpawn(targetUser,data['targetServer'],data.get('expiry')) # [authHead,authTail]
+
+        return jsonify({"authToken":result2})
+
+    except Exception as e:
+        print(f"[{datetime.now()}] POST /auth/token/get - ERROR: {str(e)}")
+        return jsonify({"error": "Token verification failed"}), 500
 
 @app.route('/auth/token/verify', methods=['POST'])
 def token_auth():

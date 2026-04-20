@@ -9,6 +9,7 @@ from os import urandom
 
 CHALLENGE_AUTH_TIME_SYNC_RANGE = 100000 # How much time leeway allowed for challenge auth...
 DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds, 24h expirt
+TOKEN_SPAWN_ATTEMPTS = 10000 # Number of attempts to make for token geenration...
 AuthServerInstance = None
 
 # Auth Token: authHead,authTail,timestamp,challenge
@@ -176,6 +177,11 @@ class AuthServ:
         return False
     ###
 
+    def tokenLookup(this,authHead): # Return uid from token, assume exists
+        search = this.authDb.cursor().execute(f"""  SELECT id FROM tokens WHERE authHead = "{authHead}" """).fetchone()
+        return search[0]
+
+
     def userInfo(this,uid): # Return info as dictionary by userId...
         fetch = this.authDb.cursor().execute(f""" SELECT * FROM users WHERE id = {uid} """)
 
@@ -198,12 +204,16 @@ class AuthServ:
         return True
     ###
 
-    def userTokenSpawn(this,uid,serverScope,expiry=time()+DEFAULT_TOKEN_EXPIRY_LENGTH):
+    def userTokenSpawn(this,uid,serverScope,expiry=None):
+        if not expiry:
+            expiry = time()+DEFAULT_TOKEN_EXPIRY_LENGTH
+
         # Produce authHead+Tail pair: ie. one sha256 string split...
         authHead = None
         authTail = None
 
-        while(True): # DoWhile
+        earlyExit = False
+        for i in range(TOKEN_SPAWN_ATTEMPTS): # DoWhile, hang auth until found. 
             hash = hashlib.sha256()
             hash.update(urandom(32)) # Sha256 should only produce 32 bytes (256bits)
             authFull = hash.hexdigest()
@@ -214,7 +224,12 @@ class AuthServ:
             # print(authFull)
             
             if not (this.authDb.cursor().execute(f""" SELECT authHead FROM tokens WHERE authHead = "{authHead}" """).fetchone()):
+                earlyExit = True
                 break # If no authHead found, then generated...
+
+        if not earlyExit:
+            print("TOKEN SPAWN FAILED. THRESHOLD.")
+            return [None,None]
 
         # print("prefail")
         # print(uid)
@@ -312,6 +327,12 @@ class AuthInterface: # Flask-facing interface, not sanitized
         # tokenAuth(this,authHead,sourceServer,timestamps,challenges,results,timeRecieveds=time())
         return AuthServerInstance.tokenAuth(authHead,sourceServer,timestamps,challenges,results,timeRecieveds)
     ###
+
+    def tokenLookup(this,authHead):
+        return AuthServerInstance.tokenLookup(authHead)
+
+    def tokenSpawn(this,uid,serverScope,expiry=None):
+        return AuthServerInstance.userTokenSpawn(uid,serverScope,expiry)
 #####
 
 if __name__ == "__main__":
