@@ -1,0 +1,66 @@
+(test) [fish@wolffia temp]$ curl -i -X POST http://127.0.0.1:3297/auth/login/first   -H "Content-Type: application/json"   -c cookies.txt   -d "{
+    \"passwordHash\": \"wowWhatAPassword(NothashedForTesting)\",
+    \"username\": \"usernameTestUse20\",
+    \"email\": \"emailTest\"   
+  }"
+HTTP/1.0 200 OK
+Server: Werkzeug/3.1.7 Python/3.14.4
+Date: Mon, 20 Apr 2026 01:48:00 GMT
+Content-Type: application/json
+Content-Length: 204
+Vary: Cookie
+Set-Cookie: session=XekoghtOvyhtAI-7uWjLVND1C8i18X1ReCaGayi5tGE; HttpOnly; Path=/
+Connection: close
+
+{"challenges":"618ee89b74a322120944fa5eb9cb4fbeda71b7acffe61fc8c2ca264ee125e75d","salt":"e4a4337b3c63839c4dfd41d552a29fbe8ba31db557da78cc4510f47c745c4bd0","servTime":1776649680.5242636,"sessionId":"new"}
+(test) [fish@wolffia temp]$ curl -i -X POST http://127.0.0.1:3297/auth/login/second   -H "Content-Type: application/json"   -b cookies.txt   -d "{
+    \"passwordHash\": \"wowWhatAPassword(NothashedForTesting)\",
+    \"username\": \"usernameTestUse20\",
+    \"email\": \"emailTest\", \
+\"timestamps\":\"1776649680.5242636\", \
+\"results\":\"1a836b3c1823f804098d6ed3b4a56d09aa962600a9499917ca3d4bc6cc6e0c
+a6\" \
+}"
+HTTP/1.0 200 OK
+Server: Werkzeug/3.1.7 Python/3.14.4
+Date: Mon, 20 Apr 2026 01:48:47 GMT
+Content-Type: application/json
+Content-Length: 86
+Vary: Cookie
+Set-Cookie: session=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/
+Connection: close
+
+{"authToken":["4ee8c22d40c5d82c9bff0f1b6c5de62f","890899cb9a73c08201680a794bfcb326"]}
+(test) [fish@wolffia temp]$ 
+
+---
+
+(test) [fish@wolffia ExtSearch]$ ./authTokens/test.py 
+Input in order: LocalHash/AuthHead(,Tail),timestamp,challenge 
+Current time : 1776649683.1267447
+1 >wowWhatAPassword(NothashedForTesting)
+2 >1776649680.5242636
+3 >618ee89b74a322120944fa5eb9cb4fbeda71b7acffe61fc8c2ca264ee125e75d
+1a836b3c1823f804098d6ed3b4a56d09aa962600a9499917ca3d4bc6cc6e0ca6
+(test) [fish@wolffia ExtSearch]$ 
+
+
+
+---
+
+(test) [fish@wolffia temp]$ curl -i -X POST http://127.0.0.1:3297/auth/token/verify   -H "Content-Type: application/json"   -b cookies.txt   -d "{
+    \"authHead\":\"4ee8c22d40c5d82c9bff0f1b6c5de62f\", \
+\"sourceServer\":\"indexServer\", \
+\"timestamps\":\"1776650122.0136857\", \
+\"challenges\":\"0\", \
+\"results\":\"5b6cc9beae6c7defeb468ce06ba7902ba1ab4ceaa3e62beb2ababa6366a7a5
+93\" \
+}"
+HTTP/1.0 200 OK
+Server: Werkzeug/3.1.7 Python/3.14.4
+Date: Mon, 20 Apr 2026 02:03:41 GMT
+Content-Type: application/json
+Content-Length: 62
+Connection: close
+
+{"result":"890899cb9a73c08201680a794bfcb326","verified":true}

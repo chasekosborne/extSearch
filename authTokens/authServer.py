@@ -7,7 +7,7 @@ from time import time
 import hashlib
 from os import urandom
 
-CHALLENGE_AUTH_TIME_SYNC_RANGE = 15 # How much time leeway allowed for challenge auth...
+CHALLENGE_AUTH_TIME_SYNC_RANGE = 100000 # How much time leeway allowed for challenge auth...
 DEFAULT_TOKEN_EXPIRY_LENGTH = 86400 # In seconds, 24h expirt
 AuthServerInstance = None
 
@@ -157,19 +157,21 @@ class AuthServ:
         return False
     ###
 
-    def userLookup(this,username=None,email=None): # Return uid(s) array
+    def uniqueUserLookup(this,username=None,email=None): # Return uid(s) array
         if (username): # Note username is unique
             uid = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE username = \"{username}\" """).fetchone()
+            
+            print(f"""USERLOOKUP CALL - USERNAME, {username},{email},{uid}""")
             if not uid:
                 return False
-            return [uid]
+            return uid[0]
 
-        if (email): # Note email is NOT NECESSARILY unique, return array
-            search = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE email = "{email}" """).fetchall()
-
+        if (email): # Note email is NOT NECESSARILY unique
+            search = this.authDb.cursor().execute(f""" SELECT id FROM users WHERE email = "{email}" """).fetchone()
+            print(f"""USERLOOKUP CALL - EMAIL, {username},{email},{uid}""")
             if not search:
                 return False
-            return search
+            return search[0]
 
         return False
     ###
@@ -224,7 +226,10 @@ class AuthServ:
     ###
 
     def tokenAuth(this,authHead,sourceServer,timestamps,challenges,results,timeRecieveds=time()): # MUST be used in secure connection. Return false or authTail
-        target = this.authDb.cursor().execute(f""" SELECT (authTail,serverScope,expiry,lastCalled) FROM tokens WHERE authHead = "{authHead}" """).fetchone()
+        print("Running token auth")
+        print(authHead)
+        target = this.authDb.cursor().execute(f""" SELECT authTail,serverScope,expiry,lastCalled FROM tokens WHERE authHead = "{authHead}" """).fetchone()
+        print("Parsed query")
         # If authHead exists
         if not target:
             print("No such token exists.")
@@ -273,8 +278,8 @@ class AuthInterface: # Flask-facing interface, not sanitized
             return False # User creation failed.
 
         # User creation success...
-        # print("starting userLookup")
-        targetUid = AuthServerInstance.userLookup(username=username)[0][0] # Only one username. Need to double unwrap...
+        # print("starting uniqueUserLookup")
+        targetUid = AuthServerInstance.uniqueUserLookup(username=username) # Only one username. Need to double unwrap...
         # print("finished lookup")
         
         return AuthServerInstance.userTokenSpawn(targetUid,"indexServer") # Returns [authHead,authTail], no protection...
@@ -282,7 +287,7 @@ class AuthInterface: # Flask-facing interface, not sanitized
 
     # User login flow (return indexServer auth token for client)
     def loginFirst(this,username=None,email=None):
-        targetUid = AuthServerInstance.userLookup(username=username,email=email)
+        targetUid = AuthServerInstance.uniqueUserLookup(username=username,email=email)
         if not targetUid:
             return False # User does not exist.
 

@@ -182,7 +182,8 @@ def login_first():
         return jsonify({
             "salt": result["salt"],
             "challenges": result["challenges"],
-            "sessionId": request.cookies.get('session', 'new')
+            "sessionId": request.cookies.get('session', 'new'),
+            "servTime": time()
         }), 200
     
     except Exception as e:
@@ -223,7 +224,7 @@ def login_second():
         # Call login second with stored state
         result = AUTH_INTERFACE.loginSecond(
             first=first_state,
-            timestamps=data['timestamps'],
+            timestamps=float(data['timestamps']),
             results=data['results']
         )
         
@@ -280,10 +281,10 @@ def token_auth():
         result = AUTH_INTERFACE.tokenAuth(
             authHead=data['authHead'],
             sourceServer=data['sourceServer'],
-            timestamps=data['timestamps'],
+            timestamps=float(data['timestamps']),
             challenges=data['challenges'],
             results=data['results'],
-            timeRecieveds=data.get('timeRecieveds')
+            timeRecieveds=float(  time() if data.get('timeRecieveds') is None else data.get('timeRecieveds')    )
         )
         
         if not result:
