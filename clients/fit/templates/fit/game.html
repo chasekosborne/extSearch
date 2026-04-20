@@ -76,6 +76,11 @@ Fit
                     </label>
                     <input type="number" id="snap-angle-step" class="snap-size-input" value="15" min="1" max="180" step="15" title="Rotation snap step (degrees)" aria-label="Rotation snap angle">
                 </div>
+                <div class = multi-row>
+                    <label class="multi-toggle" title="Select multiple squares">
+                        <input type="checkbox" id="multi-select-toggle"> Multi-Select
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -117,7 +122,7 @@ Fit
             </svg>
             </div>
             <div class="origin-marker" aria-hidden="true" title="Origin (0, 0)"></div>
-            <div class="bounding-box" id="bounding-box"></div>
+            <div class="bounding-box" id="bounding-box"><span class="bounding-box-size" aria-hidden="true"></span></div>
         </div>
         </div>
     </div>

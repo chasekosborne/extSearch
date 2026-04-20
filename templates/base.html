@@ -5,7 +5,7 @@
         <link rel="icon" type="image/png" href="{{ url_for('index.static', filename='img/Icon.svg') }}">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
         
         <style>
             .guest-dropdown { position: relative; margin-left: auto; }
@@ -39,7 +39,8 @@
         <title> {% block title %} HTML TITLE {% endblock %} </title>
     </head>
 
-    <body>
+    <body class="{% block body_class %}{% endblock %}">
+        {% if request.endpoint != 'fit.game_mobile' %}
         <header class="header">
             <a href="{{ url_for('index.home') }}" class="logo">Home</a>
             
@@ -68,6 +69,7 @@
             {% endif %}
 
         </header>
+        {% endif %}
 
         {% block content %} HTML BODY {%endblock%}
         {% block script %} {%endblock%}

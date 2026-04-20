@@ -53,7 +53,7 @@ a {
 }
 
 .page {
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
   padding: 80px 24px;
   flex: 1;
@@ -96,6 +96,320 @@ h1 {
 .content em {
   font-style: italic;
   color: #1a1a1a;
+}
+
+/* --- Square packing diagrams --- */
+.viz-figure {
+  margin: 24px 0 28px;
+  padding: 20px 18px 18px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.packing-compare-svg {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  margin: 0 auto 12px;
+  overflow: visible;
+}
+
+.viz-caption {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #71717a;
+  margin: 0;
+}
+
+.viz-caption strong {
+  color: #3f3f46;
+  font-weight: 600;
+}
+
+/* --- How Fit works: motion demos --- */
+.fit-how-visuals {
+  margin: 28px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.fit-how-block {
+  margin: 0;
+}
+
+.viz-lead {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3f3f46;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.fit-demo-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 -6px;
+  padding: 0 6px 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fit-demo-board {
+  position: relative;
+  width: 360px;
+  max-width: none;
+  height: 208px;
+  margin: 0 auto 0;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.fit-demo-bbox {
+  position: absolute;
+  left: 110px;
+  top: 88px;
+  width: 92px;
+  height: 92px;
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation: fit-demo-bbox-square-cycle 9s ease-in-out infinite;
+}
+
+.fit-demo-pointer {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(26, 26, 26, 0.88);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  animation: fit-demo-pointer-cycle 9s ease-in-out infinite;
+  z-index: 4;
+}
+
+.fit-demo-pointer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0;
+  height: 0;
+  margin-top: 2px;
+  margin-left: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid rgba(26, 26, 26, 0.88);
+}
+
+.fit-demo-square {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  z-index: 2;
+  border-radius: 0;
+  border: 2px solid #4477cc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fit-demo-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background: #5599ff;
+}
+
+.fit-demo-square--static {
+  left: 110px;
+  top: 88px;
+}
+
+.fit-demo-square--b {
+  left: 158px;
+  top: 88px;
+}
+
+.fit-demo-square--c {
+  left: 110px;
+  top: 136px;
+}
+
+.fit-demo-square--drag {
+  left: 158px;
+  top: 136px;
+  z-index: 3;
+  animation: fit-demo-drag-one 9s ease-in-out infinite;
+}
+
+@keyframes fit-demo-drag-one {
+  0%, 10% { transform: translate(94px, -100px); }
+  22%, 70% { transform: translate(0, 0); }
+  82%, 100% { transform: translate(94px, -100px); }
+}
+
+/* Smallest axis-aligned square containing all four 44px tiles (three fixed + one moving). */
+@keyframes fit-demo-bbox-square-cycle {
+  0%, 10% {
+    left: 110px;
+    top: 15px;
+    width: 186px;
+    height: 186px;
+    opacity: 0.55;
+  }
+  22%, 70% {
+    left: 110px;
+    top: 88px;
+    width: 92px;
+    height: 92px;
+    opacity: 1;
+  }
+  82%, 100% {
+    left: 110px;
+    top: 15px;
+    width: 186px;
+    height: 186px;
+    opacity: 0.55;
+  }
+}
+
+@keyframes fit-demo-pointer-cycle {
+  0%, 9% { opacity: 0; left: 244px; top: 34px; }
+  10% { opacity: 1; left: 244px; top: 34px; }
+  22% { opacity: 1; left: 172px; top: 144px; }
+  28%, 100% { opacity: 0; left: 172px; top: 144px; }
+}
+
+.fit-rotate-stage {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  height: 160px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.fit-rotate-status {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.92);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.fit-rotate-status[hidden] {
+  display: none !important;
+}
+
+.fit-rotate-square {
+  --fit-rot-deg: 0deg;
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  border: 2px solid #4477cc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: rotate(var(--fit-rot-deg));
+  transform-origin: center center;
+  transition: transform 0.2s ease-out, border-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fit-rotate-square:focus {
+  outline: none;
+}
+
+.fit-rotate-square:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+}
+
+.fit-rotate-square.is-rotate-mode {
+  border-color: #cc0000;
+  box-shadow: 0 0 0 2px #ff3333, 0 2px 8px rgba(255, 0, 0, 0.25);
+  cursor: grab;
+  touch-action: none;
+}
+
+.fit-rotate-square.is-rotate-mode.is-dragging-rot {
+  cursor: grabbing;
+}
+
+.fit-rotate-square.is-dragging-rot {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fit-rotate-square .fit-demo-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  pointer-events: none;
+  background: #5599ff;
+  transition: background-color 0.15s ease;
+}
+
+.fit-rotate-square.is-rotate-mode .fit-demo-face {
+  background: #ff0000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fit-demo-bbox,
+  .fit-demo-pointer,
+  .fit-demo-square--drag {
+    animation: none !important;
+  }
+
+  .fit-rotate-square {
+    transition-duration: 0.01ms !important;
+  }
+
+  .fit-rotate-square .fit-demo-face {
+    transition-duration: 0.01ms !important;
+  }
+
+  .fit-demo-square--drag {
+    transform: translate(0, 0);
+  }
+
+  .fit-demo-bbox {
+    left: 110px;
+    top: 88px;
+    width: 92px;
+    height: 92px;
+    opacity: 1;
+  }
+
+  .fit-demo-pointer {
+    opacity: 0;
+  }
+
 }
 
 .top-right-btn {

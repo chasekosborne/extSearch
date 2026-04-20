@@ -562,6 +562,12 @@ a {
   pointer-events: none;
   z-index: 1;
   display: none;
+  overflow: visible;
+}
+
+/* Inline size label (touch game); hidden on desktop — stats panel shows bounds */
+.bounding-box-size {
+  display: none;
 }
 
 /* Square data (selection editor content) */
@@ -730,7 +736,8 @@ a {
   gap: 8px;
 }
 
-.snap-toggle {
+.snap-toggle,
+.multi-toggle {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -740,7 +747,8 @@ a {
   user-select: none;
 }
 
-.snap-toggle input[type="checkbox"] {
+.snap-toggle input,
+.multi-toggle input[type="checkbox"] {
   width: 14px;
   height: 14px;
   margin: 0;
