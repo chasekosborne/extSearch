@@ -1,7 +1,29 @@
 import os
+from datetime import datetime
+
 import requests
 
 from shared.db import get_cursor
+
+
+def _coerce_user_created_at(user):
+    """Auth API JSON uses ISO strings; templates expect datetime for strftime."""
+    if not user:
+        return user
+    ca = user.get("created_at")
+    if ca is None or hasattr(ca, "strftime"):
+        return user
+    if isinstance(ca, str):
+        s = ca.strip()
+        if not s:
+            return {**user, "created_at": None}
+        try:
+            if s.endswith("Z"):
+                s = s[:-1] + "+00:00"
+            return {**user, "created_at": datetime.fromisoformat(s)}
+        except ValueError:
+            return user
+    return user
 
 AUTH_SERVER_URL = os.environ.get("AUTH_SERVER_URL", "").rstrip("/")
 
@@ -70,7 +92,7 @@ def get_user_by_id(user_id, token=None):
     if AUTH_SERVER_URL and token:
         data, status = _auth_get(f"/auth/user/{user_id}", token)
         if status == 200 and "user" in data:
-            return data["user"]
+            return _coerce_user_created_at(data["user"])
 
     return _get_user_by_id_direct(user_id)
 

@@ -9,6 +9,54 @@ function isInDeleteZone(clientX, clientY) {
          clientY >= rect.top && clientY <= rect.bottom;
 }
 
+function fitUndo() {
+  if (undoStack.length === 0) return;
+  redoStack.push(JSON.stringify(squares));
+  squares = JSON.parse(undoStack.pop());
+  renderSquares();
+}
+
+function fitRedo() {
+  if (redoStack.length === 0) return;
+  undoStack.push(JSON.stringify(squares));
+  squares = JSON.parse(redoStack.pop());
+  renderSquares();
+}
+
+function fitCopySquare() {
+  if (!selectedSquareId) return;
+  const sq = squares.find(function (s) { return s.id === selectedSquareId; });
+  if (!sq) return;
+  clipboard = Object.assign({}, sq);
+}
+
+function fitPasteSquare() {
+  if (!clipboard) return;
+  const boardSize = getBoardSize();
+  let x = snapPos(clipboard.x + 20);
+  let y = snapPos(clipboard.y + 20);
+  x = Math.max(0, Math.min(x, boardSize.width - SQUARE_SIZE));
+  y = Math.max(0, Math.min(y, boardSize.height - SQUARE_SIZE));
+  const newSquare = {
+    id: 'sq-' + (++idCounter),
+    x: x,
+    y: y,
+    rotation: clipboard.rotation,
+    mode: clipboard.mode || 'move'
+  };
+  if (wouldCollide(newSquare, null)) {
+    showToast('No room to paste here.', 'error');
+    return;
+  }
+  pushUndoState();
+  squares.push(newSquare);
+  board.appendChild(createSquareEl(newSquare));
+  selectedSquareId = newSquare.id;
+  updateAllSquareClasses();
+  updateSquareDataDisplay();
+  updateStats();
+}
+
 function onPointerDown(e) {
   const target = e.target.closest('.square');
   const isSource = e.target.closest('#source');
@@ -41,6 +89,8 @@ function onPointerDown(e) {
     const id = target.dataset.id;
     const sq = squares.find(function(s) { return s.id === id; });
     if (!sq) return;
+
+    pushUndoState();
 
     // Select the square
     selectedSquareId = id;
@@ -259,6 +309,7 @@ function onPointerUp(e) {
     }
   } else if (dragState.type === 'move') {
     if (isInDeleteZone(e.clientX, e.clientY)) {
+      pushUndoState();
       removeSquare(dragState.id);
     }
 
@@ -330,6 +381,15 @@ deleteAllBtn.addEventListener('click', function (e) {
   e.stopPropagation();
   deleteAllSquares();
 });
+
+var fitUndoBtn = document.getElementById('fit-undo-btn');
+var fitRedoBtn = document.getElementById('fit-redo-btn');
+if (fitUndoBtn) {
+  fitUndoBtn.addEventListener('click', function (e) { e.preventDefault(); fitUndo(); });
+}
+if (fitRedoBtn) {
+  fitRedoBtn.addEventListener('click', function (e) { e.preventDefault(); fitRedo(); });
+}
 
 /* Toast helper */
 var toastTimer = null;
@@ -407,3 +467,35 @@ submitBtn.addEventListener('click', async () => {
     updateSubmitButtonState();
   }
 });
+
+/* Toolbar minimize/maximize toggle */
+(function initToolbarMinimizeToggle() {
+  var btn = document.getElementById('fit-toolbar-minimize-btn');
+  var bottomBar = document.querySelector('aside.bottom-bar');
+  if (!btn || !bottomBar) return;
+
+  var iconEl = btn.querySelector('.toolbar-minimize-btn-icon');
+  var textEl = btn.querySelector('.toolbar-minimize-btn-text');
+
+  function update() {
+    var minimized = bottomBar.classList.contains('is-minimized');
+    btn.setAttribute('aria-expanded', minimized ? 'false' : 'true');
+    if (iconEl) iconEl.textContent = minimized ? '+' : '−';
+    if (textEl) textEl.textContent = minimized ? 'Expand' : 'Minimize';
+  }
+
+  function toggleToolbar(e) {
+    e.preventDefault();
+    bottomBar.classList.toggle('is-minimized');
+    update();
+  }
+
+  btn.addEventListener('pointerup', toggleToolbar);
+  btn.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      toggleToolbar(e);
+    }
+  });
+
+  update();
+})();

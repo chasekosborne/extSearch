@@ -136,6 +136,9 @@ function loadSubmissionIntoBoard(submissionId) {
     .then(function (r) { return r.json(); })
     .then(function (data) {
       const apiSquares = data.squares || [];
+      undoStack = [];
+      redoStack = [];
+      clipboard = null;
       deleteAllSquares(true);
       apiSquares.forEach(function (apiSq) {
         const fitSq = apiSquareToFit(apiSq);
@@ -221,6 +224,9 @@ function closeClearConfirmModal() {
 clearConfirmCancel.addEventListener('click', closeClearConfirmModal);
 clearConfirmOk.addEventListener('click', function () {
   closeClearConfirmModal();
+  if (squares.length > 0) {
+    pushUndoState();
+  }
   performClearBoard();
 });
 
@@ -270,4 +276,20 @@ function updateAllSquareClasses() {
     }
     el.className = className;
   });
+}
+
+/** Rebuild square DOM from `squares` (used by undo/redo). */
+function renderSquares() {
+  board.querySelectorAll('.square').forEach(function (el) { el.remove(); });
+  squares.forEach(function (sq) {
+    board.appendChild(createSquareEl(sq));
+  });
+  idCounter = 0;
+  squares.forEach(function (sq) {
+    var m = /^sq-(\d+)$/.exec(sq.id);
+    if (m) idCounter = Math.max(idCounter, parseInt(m[1], 10));
+  });
+  updateAllSquareClasses();
+  updateSquareDataDisplay();
+  updateStats();
 }

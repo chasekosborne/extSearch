@@ -1,4 +1,4 @@
-<img src="index_server/static/img/IconFull.svg"  style="display:block; margin-left:auto; margin-right:auto;" width=35%>
+<img src="index_server/static/img/IconFull.png"  style="display:block; margin-left:auto; margin-right:auto;" width=35%>
 
 extSearch is an open-source collaboration geared towards finding extremum values for hard constrained optimization problems.
 

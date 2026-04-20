@@ -1,0 +1,3 @@
+python -m clients.fit.verify_worker --loop
+python main.py
+python -m auth_server.app
